@@ -1,0 +1,72 @@
+\usepackage[T2A]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[russian]{babel}
+
+\usepackage{listings}
+\usepackage{xcolor}
+
+\definecolor{codebg}{HTML}{F8F8F8}
+\definecolor{keyword}{RGB}{0,0,180}
+\definecolor{string}{RGB}{163,21,21}
+\definecolor{comment}{RGB}{0,128,0}
+\definecolor{builtin}{RGB}{43,145,175}
+\definecolor{type}{RGB}{127,0,85}
+\definecolor{number}{RGB}{128,0,128}
+
+% --- стиль listings ---
+\lstdefinestyle{bright}{
+  backgroundcolor=\color{codebg},
+  basicstyle=\ttfamily\small,
+  keywordstyle=\color{keyword}\bfseries,
+  commentstyle=\color{comment}\itshape,
+  stringstyle=\color{string},
+  identifierstyle=\color{black},
+  emph={int,float,double,char,void,bool},            
+  emphstyle=\color{type}\bfseries,                    
+  morekeywords=[2]{torch,Tensor,torch.nn,torch.optim,cudaMalloc,cudaMemcpy}, 
+  keywordstyle=[2]\color{builtin},                    
+  numberstyle=\tiny\color{number},
+  stepnumber=1,
+  numbersep=6pt,
+  frame=single,
+  rulecolor=\color{gray!50},
+  showspaces=false,
+  showstringspaces=false,
+  breaklines=true,
+  breakatwhitespace=true,
+  tabsize=2,
+  columns=fullflexible,
+  captionpos=b,
+}
+\lstset{style=bright}
+
+\usepackage{chngcntr}
+\counterwithin{figure}{section}
+\counterwithin{table}{section}
+
+\usepackage{setspace}
+\onehalfspacing
+
+\usepackage{graphicx}   
+\usepackage{longtable} 
+\usepackage{amsmath}  
+\usepackage{titlesec}
+
+\usepackage{tabularx} 
+
+\usepackage{amsmath, amssymb, amsfonts, amsthm} % для \Diamond, \tilde и т.д.
+\usepackage{pgfplots}                   % если оставляете \begin{tikzpicture}
+\usepackage{tikz}
+\usetikzlibrary{positioning, shapes, arrows.meta, fit, matrix}
+
+\usepackage{booktabs}  
+\pgfplotsset{compat=1.17}
+\usetikzlibrary{calc} 
+
+\usepackage{hyperref}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Определение}[section]
+\newtheorem{theorem}{Теорема}[section]
+
+\newtheorem{lemma}[theorem]{Лемма}

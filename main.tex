@@ -1,0 +1,31 @@
+\RequirePackage{etoolbox}
+\def\eskdrerun{}
+\let\mysvdAtBeginDocument\AtBeginDocument
+\makeatletter
+\def\AtBeginDocument#1{
+  {
+        \mysvdAtBeginDocument{#1}
+        \ifdefined\ESKD@frame@box
+           \ifdefined\ESKDnewStyle
+                \let\AtBeginDocument\mysvdAtBeginDocument
+           \else\gappto\eskdrerun{#1}
+           \fi
+        \else
+        \fi
+  }
+}
+
+\documentclass[russian, utf8, simple, linethick=0.7mm, hpadding=5mm]{eskdtext}
+
+
+\input{packages.tex}
+\input{preamble.tex}
+\begin{document}
+\counterwithin{lstlisting}{section}
+\include{titlepage}
+\tableofcontents
+\include{sections/introduction}
+\include{sections/description}
+\include{sections/design}
+\include{sections/implementation}
+\end{document}
