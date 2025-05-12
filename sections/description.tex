@@ -1399,12 +1399,13 @@ X_res, y_res = smote.fit_resample(X, y)
 \begin{itemize}
   \item \textbf{Статистические критерии:}
     \begin{itemize}
-      \begin{equation}
-      \item Z-score: \(\displaystyle |z_i| > \tau\) (\(\tau\approx3\)).
-      \item IQR-критерий: \(x < Q_1 - 1.5\,\mathrm{IQR}\) или \(x > Q_3 + 1.5\,\mathrm{IQR}\).
-      \end{equation}
+      \item Z-score: 
+        $|z_i| > \tau$, где обычно $\tau\approx3$.
+      \item IQR-критерий: 
+        $x < Q_1 - 1.5\,\mathrm{IQR}$ или $x > Q_3 + 1.5\,\mathrm{IQR}$.
     \end{itemize}
-  \item \textbf{Алгоритмические:}
+
+  \item \textbf{Алгоритмические методы:}
     \begin{itemize}
       \item Isolation Forest: строит деревья, в которых «аномалии» изолируются быстрее.
       \item Local Outlier Factor: сравнивает плотность вокруг точки с плотностью у соседей.
