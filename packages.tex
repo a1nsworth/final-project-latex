@@ -1,11 +1,17 @@
 %--- Кодировка и локализация ------------------------------------
-\usepackage[T2A]{fontenc}
+% \usepackage[T2A]{fontenc}
 \usepackage[utf8]{inputenc}
 \usepackage[russian]{babel}
 
+\usepackage{lastpage}
+\usepackage{tempora} 
+\usepackage{newtxmath}
+
+% \usepackage{pscyr}
+% \renewcommand{\rmdefault}{ftm}
 
 %--- Математика --------------------------------------------------
-\usepackage{amsmath, amssymb, amsfonts, amsthm}
+\usepackage{amsmath, amsfonts, amsthm}
 % \usepackage{mathtools}               % расширения для amsmath
 
 \DeclareMathOperator{\CP}{CP}
@@ -83,7 +89,6 @@
 %--- Гиперссылки -----------------------------------------------
 \usepackage{hyperref}
 
-%--- Теоремная среда --------------------------------------------
 \theoremstyle{definition}
 \newtheorem{definition}{Определение}[section]
 
@@ -95,3 +100,14 @@
 \newtheorem*{remark}{Замечание}
 
 \usepackage{natbib}
+
+
+
+\makeatletter
+\let\origparagraph\paragraph
+\renewcommand{\paragraph}[1]{%
+  \origparagraph{#1}\mbox{}\\ 
+
+  %
+}
+\makeatother
