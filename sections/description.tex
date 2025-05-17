@@ -160,6 +160,7 @@
   \item \textit{Отсутствие формальной статистической основы}: сложность верификации корректности и оценке вероятностных свойств.
 \end{itemize}
 
+
 \subsubsection{Современные вызовы и направления исследований}
 \label{subsec:challenges}
 
@@ -221,6 +222,30 @@
   \item оптимизация под DSP и микро контроллеры;
   \item конвейеризация и SIMD-параллелизм для высокоскоростных приложений.
 \end{itemize}
+
+\subsubsection{Современные исследовательские тренды}
+\label{subsec:trends}
+
+\textbf{Type-2 $\to$ Type-3.}\,
+Недавно предложен класс \emph{General Type-3 Fuzzy Sets}
+(Bustince et al., 2023), расширяющий неопределённость
+ещё на уровень ядра MF.
+
+\textbf{Fuzzy Deep Learning.}\,
+Интеграция нечётких слоёв в CNN/Transformer
+для повышения робустности к «adversarial noise»
+и объяснимости
+(Chen et al., 2024).
+
+\textbf{Эволюционная оптимизация.}\,
+Алгоритмы NSGA-III, CMA-ES
+дают парето-фронт «точность – сложность»
+для отсева избыточных правил и MF.
+
+\textbf{Edge AI.}\,
+Лёгкие TSK-модели с quantization-aware training
+компилируются в WebAssembly
+для IIoT-датчиков (Nikita et al., 2025)
 
 \subsubsection{Нечёткие множества и лингвистические переменные}
 Лингвистическая переменная \(X\) определяется кортежем \((X, T(X), U, M)\), где \(T(X)\) --- множество лингвистических термов, \(U\) --- универсум значений, \(M\) --- отображение из \(T(X)\) в функции \(\mu:U\to[0,1]\) \cite{Zadeh1975}. Типичные формы функций принадлежности:
@@ -378,6 +403,214 @@
 Агрегированное нечёткое множество риска $R$ дефаззифицируется в численный уровень $r^*\in[0,1]$.
 \end{example}
 
+\subsection{Методы \emph{non--singleton} вывода}
+
+\label{subsec:other_defuzz}
+
+\subsubsection{Метод Мамдани (Mamdani)}
+\label{sec:mamdani}
+
+В классическом подходе Мамдани (1975) объединение выводов правил осуществляется путём «обрезки» (операция минимум) или «усечения» исходных выходных функций принадлежности на уровне активации каждого правила. При этом входные данные обычно представлены в виде singleton, и вся неопределённость от измерения «съеживается» в одно число. В результате при одинаковых степенях срабатывания разных правил теряется информация о форме исходного распределения, что может приводить к снижению устойчивости вывода и искажению результирующего нечёткого множества.
+
+В предлагаемом варианте сохраняется непрерывное представление входного сигнала через non–singleton фаззификацию: каждому точечному измерению $x'$ сопоставляется гауссовская функция
+\[
+  \mu_X(u)
+  = \exp\!\Bigl(-\tfrac12\bigl(\tfrac{u - x'}{\sigma}\bigr)^2\Bigr), 
+  \quad u\in U,
+\]
+которая отражает как инструментальную, так и лингвистическую неопределённость. Далее вывод по каждому правилу производится по модифицированной процедуре Мамдани, а дефаззификация — через центр тяжести с учётом обоих распрделений.
+
+\paragraph{Алгоритм с non–singleton фаззификацией}
+\begin{enumerate}
+  \item \textbf{Фаззификация входа.} Преобразовать каждое наблюдение $x'$ в нечёткое множество с МФ $\mu_X(u)$.
+  \item \textbf{Оценка правил.} Для каждого правила $k=1,\dots,m$ вычислить степень активации
+  \[
+    w_k \;=\;\sup_{u\in U}\bigl[\mu_X(u)\,\ast\,\mu_{A_k}(u)\bigr],
+  \]
+  где ‘‘$\ast$’’ — выбранная конъюнкция (например, минимум или произведение).
+  \item \textbf{Агрегация выводов.} Построить результирующее нечёткое множество на выходе
+  \[
+    \mu_Y(y\mid u)
+    = \bigvee_{k=1}^{m}\bigl[w_k \,\ast\, \mu_{B_k}(y)\bigr],
+  \]
+  где ‘‘$\vee$’’ — дизъюнкция (например, максимум).
+  \item \textbf{Дефаззификация.} Рассчитать точечное значение выхода по центру тяжести:
+  \[
+    y^* 
+    = 
+    \frac{\displaystyle\iint_{U\times\mathbb R}
+      y\,\mu_Y(y\mid u)\,\mu_X(u)\,du\,dy}
+         {\displaystyle\iint_{U\times\mathbb R}
+      \mu_Y(y\mid u)\,\mu_X(u)\,du\,dy}.
+  \]
+\end{enumerate}
+
+Такой алгоритм сохраняет информацию о форме входного распределения и повышает устойчивость вывода к шуму и погрешностям измерений, но увеличивает вычислительную сложность до $O(nmP)$, где $n$ — число правил, $m$ — число выходных лингвистических термов, а $P$ — число точек дискретизации множества $U$.
+
+\begin{figure}[H]
+  \centering
+  \begin{tikzpicture}
+    \begin{axis}[
+      width=0.8\linewidth,
+      xlabel={$u$}, ylabel={$\mu$},
+      title={Пересечение двух гауссовских функций принадлежности},
+      domain=-4:4, samples=200,
+      ymin=0, ymax=1.05,
+      ytick={0,1}, yticklabels={0,1},
+    ]
+      \addplot[thick, draw=red]  {exp(-0.5*((x+1)/1)^2)};
+      \addplot[thick, draw=blue] {exp(-0.5*((x-2)/0.5)^2)};
+      \addplot[thick, draw=green!80!black, fill=green!20]
+        plot [domain=-4:4] {min(
+          exp(-0.5*((x+1)/1)^2),
+          exp(-0.5*((x-2)/0.5)^2)
+        )} \closedcycle;
+      \legend{$\mu_1(u)$,$\mu_2(u)$,$\mu_{\cap}(u)$}
+    \end{axis}
+  \end{tikzpicture}
+  \caption{Иллюстрация «усечения» по Мамдани при $\alpha=0.6$.}
+\end{figure}
+
+
+\subsubsection{Метод Такеги–Сугено (Takagi–Sugeno)}
+\label{subsubsec:sugeno}
+
+В методе Сугено (1985) результат каждого правила задаётся не нечётким множеством, а аналитической функцией от входных переменных. Это позволяет получить численное выражение для $y^*$ без тройной интеграции дефаззификации.
+
+\paragraph{Основные этапы}
+\begin{enumerate}
+  \item \emph{Фаззификация.} Каждое входное значение $u_i$ преобразуется в степень принадлежности $\mu_{A_k}(u_i)$.
+  \item \emph{Активация правила.} Для правила $k$ вычислить вес
+    \[
+      w_k \;=\; T\bigl(\mu_{A_k^1}(u_1),\dots,\mu_{A_k^n}(u_n)\bigr),
+    \]
+    где $T$ — выбранная T-норма (например, минимум или произведение).
+  \item \emph{Численный вывод.} Подставить $u=(u_1,\dots,u_n)$ в линейную функцию
+    \[
+      f_k(u) = a_{k1}u_1 + \dots + a_{kn}u_n + b_k,
+    \]
+    получив $y_k = f_k(u)$.
+  \item \emph{Агрегация.} Итоговое значение
+    \[
+      y^* = \frac{\sum_{k=1}^m w_k\,y_k}{\sum_{k=1}^m w_k}.
+    \]
+\end{enumerate}
+
+\paragraph{Пример иллюстрации}
+\begin{figure}[H]
+  \centering
+  \begin{tikzpicture}
+    \begin{axis}[
+      width=0.7\linewidth,
+      xlabel={$u$}, ylabel={$y$},
+      title={Иллюстрация работы метода Сугено},
+      xmin=0, xmax=2, ymin=0, ymax=5,
+      xtick={1}, xticklabels={$u_0$},
+      ytick={2,4}, yticklabels={$y_2$,$y_1$},
+      legend pos=north west,
+      legend cell align=left,
+      tick align=outside,
+    ]
+      %--- указываем веса в нижнем правом углу ---
+      \node[anchor=south east] at (rel axis cs:0.98,0.02) {$w_1=0.6,\;w_2=0.4$};
+
+      %--- основные графики и легенда ---
+      \addplot[thick, red] {3*x + 1};
+      \addlegendentry{$f_1(u)$}
+      \addplot[thick, blue] {2*x};
+      \addlegendentry{$f_2(u)$}
+      \addplot[thick, dashed, draw=green!80!black] coordinates {(0,3.2) (2,3.2)};
+      \addlegendentry{$y^*$}
+
+      %--- вертикальная линия u = u0 (без легенды) ---
+      \addplot[dashed, thick, gray, forget plot] coordinates {(1,0) (1,5)};
+
+      %--- точки пересечения (без легенды) ---
+      \addplot[only marks, mark=*, red,   forget plot] coordinates {(1,4)};
+      \addplot[only marks, mark=*, blue,  forget plot] coordinates {(1,2)};
+      \addplot[only marks, mark=*, green!80!black, fill=white, forget plot]
+        coordinates {(0,3.2)};
+      \addplot[only marks, mark=*, green!80!black, fill=green!20, forget plot]
+        coordinates {(1,3.2)};
+
+      %--- подписи точек ---
+      \node[above right] at (axis cs:1,4)   {$(1,4)$};
+      \node[below right] at (axis cs:1,2)   {$(1,2)$};
+      \node[left]        at (axis cs:0,3.2) {$(0,3.2)$};
+    \end{axis}
+  \end{tikzpicture}
+  \caption{%
+    При $u=u_0=1$, весовые коэффициенты $w_1=0.6$, $w_2=0.4$.\\[6pt]
+    Это даёт $f_1(1)=4$, $f_2(1)=2$ и 
+    $y^*=\dfrac{0.6\cdot4 + 0.4\cdot2}{0.6+0.4}=3.2$.
+  }
+\end{figure}
+
+\paragraph{Преимущества и ограничения}
+\begin{itemize}
+  \item Ясная параметрическая форма выхода, удобная для идентификации и оптимизации.
+  \item Отсутствие тяжёлой центр-тяжести-дефаззификации на каждом шаге.
+  \item Зависимость $f_k(u)$ может плохо соответствовать интуитивно понятным лингвистическим термам.
+\end{itemize}
+
+
+\subsubsection{Метод Цукамото (Tsukamoto)}
+\label{subsubsec:tsukamoto}
+
+В методе Цукамото (1979) каждая выходная МФ должна быть монотонной и обратимой. При уровне активации $\alpha_k$ правила вычисляется единственное численное значение $y_k$, после чего все $y_k$ усредняются.
+
+\paragraph{Основные этапы}
+\begin{enumerate}
+  \item \emph{Фаззификация.} По входным данным $u$ вычислить степень срабатывания $w_k$ каждого правила.
+  \item \emph{Инверсия МФ.} Для каждой выходной функции $\mu_{Y_k}(y)$ (монотонной на рассматриваемом диапазоне) найти
+    \[
+      y_k = \mu_{Y_k}^{-1}(w_k).
+    \]
+  \item \emph{Агрегация.} Итоговое значение рассчитывается по формуле
+    \[
+      y^* = \frac{\sum_{k=1}^m w_k\,y_k}{\sum_{k=1}^m w_k}.
+    \]
+\end{enumerate}
+
+\paragraph{Пример иллюстрации}
+\begin{figure}[H]
+  \centering
+  \begin{tikzpicture}
+    \begin{axis}[
+      width=0.8\linewidth,
+      xlabel={$w_k$}, ylabel={$y_k$},
+      title={Обратное преобразование в методе Цукамото},
+      xmin=0, xmax=1, ymin=0, ymax=10,
+      xtick={0,0.3,0.8,1},
+      xticklabels={0,$w_1=0.3$,$w_2=0.8$,1},
+      ytick={2,3.8,6.8,8},
+      yticklabels={$y_{\min}=2$,$y_1=3.8$,$y_2=6.8$,$y_{\max}=8$},
+      legend pos=north west,
+      legend cell align=left,
+    ]
+      % сама линейная функция
+      \addplot[thick, purple] {2 + 6*x};
+      \addlegendentry{$y_k=\mu^{-1}_{Y_k}(w_k)$}
+
+      % точки для w1 и w2
+      \addplot[only marks, mark=*, draw=purple, fill=purple!50] 
+        coordinates {(0.3,2+6*0.3) (0.8,2+6*0.8)};
+
+      % подписи рядом с точками
+      \node[above right] at (axis cs:0.3,3.8) {$(0.3,\,3.8)$};
+      \node[above right] at (axis cs:0.8,6.8) {$(0.8,\,6.8)$};
+    \end{axis}
+  \end{tikzpicture}
+  \caption{%
+    Линейная обратная функция $y_k=2+6\,w_k$, \\
+    отмечены точки $(w_1,y_1)=(0.3,3.8)$ и $(w_2,y_2)=(0.8,6.8)$.}
+\end{figure}
+
+\paragraph{Преимущества и ограничения}
+\begin{itemize}
+  \item Итоговое значение $y^*$ определяется без интеграции, сохраняя интерпретируемость выходных МФ.
+  \item Необходима строгая монотонность и обратимость каждой функции $\mu_{Y_k}(y)$, что ограничивает гибкость.
+\end{itemize}
 
 
 
@@ -426,64 +659,6 @@ Type-2 & MF второго порядка & + робустность; – type-r
 \end{tabular}
 \end{table}
 
-\subsection{Подход \emph{non–singleton} и его обоснование}
-\label{subsec:nsi_deep}
-
-Пусть измерение $x$ снабжено приборной погрешностью $\sigma$.
-Тогда вместо точки берём гауссово нечёткое число
-\begin{equation}
-  \mu_{X}(u)=\exp\!\Bigl(
-    -\tfrac12\bigl(\tfrac{u-x}{\sigma}\bigr)^{\!2}\Bigr).
-  \label{eq:gauss_nsi}
-\end{equation}
-Активность $k$-го правила вычисляют суп-композицией
-\begin{equation}
-  w_k=\sup_{u\in U}
-      \bigl[\mu_{X}(u)\,\boldsymbol{\ast}\,
-            \mu_{A_k}(u)\bigr],
-  \label{eq:nsi_sup}
-\end{equation}
-где $\boldsymbol{\ast}$ — $t$-норма (обычно $t_{\min}$ или Prod).
-В~результате интеграл дефаззификации (для Мамдани) преобразуется в
-\begin{equation}
-  y^\star=\frac{\displaystyle
-      \iint\limits_{U\times\mathbb R}
-      y\,
-      \mu_Y(y\,|\,u)\,
-      \mu_{X}(u)\,dy\,du}
-    {\displaystyle
-      \iint\limits_{U\times\mathbb R}
-      \mu_Y(y\,|\,u)\,
-      \mu_{X}(u)\,dy\,du},
-  \label{eq:nsi_defuzz}
-\end{equation}
-что приводит к росту сложности до $O(nmP)$, где $P$ —
-кол-во точек дискретизации. Этот факт обусловливает
-\emph{необходимость} GPU-ускорения и оптимизирующих библиотек.
-
-\subsection{Современные исследовательские тренды}
-\label{subsec:trends}
-
-\textbf{Type-2 $\to$ Type-3.}\,
-Недавно предложен класс \emph{General Type-3 Fuzzy Sets}
-(Bustince et al., 2023), расширяющий неопределённость
-ещё на уровень ядра MF.
-
-\textbf{Fuzzy Deep Learning.}\,
-Интеграция нечётких слоёв в CNN/Transformer
-для повышения робустности к «adversarial noise»
-и объяснимости
-(Chen et al., 2024).
-
-\textbf{Эволюционная оптимизация.}\,
-Алгоритмы NSGA-III, CMA-ES
-дают парето-фронт «точность – сложность»
-для отсева избыточных правил и MF.
-
-\textbf{Edge AI.}\,
-Лёгкие TSK-модели с quantization-aware training
-компилируются в WebAssembly
-для IIoT-датчиков (Nikita et al., 2025)
 
 %-----------------------------------------------------------------
 \subsection{Нейронные сети}
@@ -810,247 +985,3 @@ DevOps и CI/CD     & GitHub Actions, Docker & + автоматизация те
 Такой инструментальный стек гарантирует модульность, масштабируемость
 и удобство сопровождения проекта нейронечёткой системы
 с non–singleton входами.
-
-
-\section{Non–singleton фаззификация}
-\label{sec:nsi_phase}
-
-Раздел содержит подробное описание метода non–singleton фаззификации и его отличий от классического singleton-подхода. Учитываются следующие аспекты:
-\begin{itemize}
-  \item формализация нечётких входов как распределений неопределённости;
-  \item воздействие погрешности измерения на степень принадлежности;
-  \item отличие алгоритмов вывода и дефаззификации в зависимости от вида фаззификации.
-\end{itemize}
-
-\subsection{Актуальность и постановка задачи}
-Современные нечеткие системы применяются при обработке данных, подверженных шуму и лингвистической неопределённости. В классической фаззификации каждое значение $x'\in U$ ассоциируется с singleton-функцией:
-\[
-  \mu_{A_k}(x')=1,\quad \mu_{A_k}(u)=0\quad (u\ne x').
-\]
-Это приводит к:
-\begin{itemize}
-  \item потере информации о доверии к измерению;
-  \item высокой чувствительности к выбросам;
-  \item отсутствию учета «размытого» понимания лингвистических оценок.
-\end{itemize}
-Задача: ввести non–singleton фаззификацию — представление входа как нечёткого числа $\mu_X(u)$.
-
-\subsection{Математическая постановка}
-Пусть результат измерения $x'$ имеет погрешность $\sigma>0$. Тогда
-\[
-  \mu_X(u)=\exp\Bigl(-\tfrac12\bigl(\tfrac{u-x'}{\sigma}\bigr)^2\Bigr),
-  \quad u\in U.
-\]
-Активность $k$-го правила:
-\[
-  w_k=\sup_{u\in U}\bigl[\mu_X(u) \land \mu_{A_k}(u)\bigr].
-\]
-
-
-\subsection{Методы дефаззификации}
-\label{subsec:other_defuzz}
-
-\subsubsection{Метод Мамдани (Mamdani)}
-\label{sec:mamdani}
-
-В классическом подходе Мамдани (1975) объединение выводов правил осуществляется путём «обрезки» (операция минимум) или «усечения» исходных выходных функций принадлежности на уровне активации каждого правила. При этом входные данные обычно представлены в виде singleton, и вся неопределённость от измерения «съеживается» в одно число. В результате при одинаковых степенях срабатывания разных правил теряется информация о форме исходного распределения, что может приводить к снижению устойчивости вывода и искажению результирующего нечёткого множества.
-
-В предлагаемом варианте сохраняется непрерывное представление входного сигнала через non–singleton фаззификацию: каждому точечному измерению $x'$ сопоставляется гауссовская функция
-\[
-  \mu_X(u)
-  = \exp\!\Bigl(-\tfrac12\bigl(\tfrac{u - x'}{\sigma}\bigr)^2\Bigr), 
-  \quad u\in U,
-\]
-которая отражает как инструментальную, так и лингвистическую неопределённость. Далее вывод по каждому правилу производится по модифицированной процедуре Мамдани, а дефаззификация — через центр тяжести с учётом обоих распрделений.
-
-\paragraph{Алгоритм с non–singleton фаззификацией}
-\begin{enumerate}
-  \item \textbf{Фаззификация входа.} Преобразовать каждое наблюдение $x'$ в нечёткое множество с МФ $\mu_X(u)$.
-  \item \textbf{Оценка правил.} Для каждого правила $k=1,\dots,m$ вычислить степень активации
-  \[
-    w_k \;=\;\sup_{u\in U}\bigl[\mu_X(u)\,\ast\,\mu_{A_k}(u)\bigr],
-  \]
-  где ‘‘$\ast$’’ — выбранная конъюнкция (например, минимум или произведение).
-  \item \textbf{Агрегация выводов.} Построить результирующее нечёткое множество на выходе
-  \[
-    \mu_Y(y\mid u)
-    = \bigvee_{k=1}^{m}\bigl[w_k \,\ast\, \mu_{B_k}(y)\bigr],
-  \]
-  где ‘‘$\vee$’’ — дизъюнкция (например, максимум).
-  \item \textbf{Дефаззификация.} Рассчитать точечное значение выхода по центру тяжести:
-  \[
-    y^* 
-    = 
-    \frac{\displaystyle\iint_{U\times\mathbb R}
-      y\,\mu_Y(y\mid u)\,\mu_X(u)\,du\,dy}
-         {\displaystyle\iint_{U\times\mathbb R}
-      \mu_Y(y\mid u)\,\mu_X(u)\,du\,dy}.
-  \]
-\end{enumerate}
-
-Такой алгоритм сохраняет информацию о форме входного распределения и повышает устойчивость вывода к шуму и погрешностям измерений, но увеличивает вычислительную сложность до $O(nmP)$, где $n$ — число правил, $m$ — число выходных лингвистических термов, а $P$ — число точек дискретизации множества $U$.
-
-\begin{figure}[H]
-  \centering
-  \begin{tikzpicture}
-    \begin{axis}[
-      width=0.8\linewidth,
-      xlabel={$u$}, ylabel={$\mu$},
-      title={Пересечение двух гауссовских функций принадлежности},
-      domain=-4:4, samples=200,
-      ymin=0, ymax=1.05,
-      ytick={0,1}, yticklabels={0,1},
-    ]
-      \addplot[thick, draw=red]  {exp(-0.5*((x+1)/1)^2)};
-      \addplot[thick, draw=blue] {exp(-0.5*((x-2)/0.5)^2)};
-      \addplot[thick, draw=green!80!black, fill=green!20]
-        plot [domain=-4:4] {min(
-          exp(-0.5*((x+1)/1)^2),
-          exp(-0.5*((x-2)/0.5)^2)
-        )} \closedcycle;
-      \legend{$\mu_1(u)$,$\mu_2(u)$,$\mu_{\cap}(u)$}
-    \end{axis}
-  \end{tikzpicture}
-  \caption{Иллюстрация «усечения» по Мамдани при $\alpha=0.6$.}
-\end{figure}
-
-
-\subsubsection{Метод Такеги–Сугено (Takagi–Sugeno)}
-\label{subsubsec:sugeno}
-
-В методе Сугено (1985) результат каждого правила задаётся не нечётким множеством, а аналитической функцией от входных переменных. Это позволяет получить численное выражение для $y^*$ без тройной интеграции дефаззификации.
-
-\paragraph{Основные этапы}
-\begin{enumerate}
-  \item \emph{Фаззификация.} Каждое входное значение $u_i$ преобразуется в степень принадлежности $\mu_{A_k}(u_i)$.
-  \item \emph{Активация правила.} Для правила $k$ вычислить вес
-    \[
-      w_k \;=\; T\bigl(\mu_{A_k^1}(u_1),\dots,\mu_{A_k^n}(u_n)\bigr),
-    \]
-    где $T$ — выбранная T-норма (например, минимум или произведение).
-  \item \emph{Численный вывод.} Подставить $u=(u_1,\dots,u_n)$ в линейную функцию
-    \[
-      f_k(u) = a_{k1}u_1 + \dots + a_{kn}u_n + b_k,
-    \]
-    получив $y_k = f_k(u)$.
-  \item \emph{Агрегация.} Итоговое значение
-    \[
-      y^* = \frac{\sum_{k=1}^m w_k\,y_k}{\sum_{k=1}^m w_k}.
-    \]
-\end{enumerate}
-
-\paragraph{Пример иллюстрации}
-\begin{figure}[H]
-  \centering
-  \begin{tikzpicture}
-    \begin{axis}[
-      width=0.7\linewidth,
-      xlabel={$u$}, ylabel={$y$},
-      title={Иллюстрация работы метода Сугено},
-      xmin=0, xmax=2, ymin=0, ymax=5,
-      xtick={1}, xticklabels={$u_0$},
-      ytick={2,4}, yticklabels={$y_2$,$y_1$},
-      legend pos=north west,
-      legend cell align=left,
-      tick align=outside,
-    ]
-      %--- указываем веса в нижнем правом углу ---
-      \node[anchor=south east] at (rel axis cs:0.98,0.02) {$w_1=0.6,\;w_2=0.4$};
-
-      %--- основные графики и легенда ---
-      \addplot[thick, red] {3*x + 1};
-      \addlegendentry{$f_1(u)$}
-      \addplot[thick, blue] {2*x};
-      \addlegendentry{$f_2(u)$}
-      \addplot[thick, dashed, draw=green!80!black] coordinates {(0,3.2) (2,3.2)};
-      \addlegendentry{$y^*$}
-
-      %--- вертикальная линия u = u0 (без легенды) ---
-      \addplot[dashed, thick, gray, forget plot] coordinates {(1,0) (1,5)};
-
-      %--- точки пересечения (без легенды) ---
-      \addplot[only marks, mark=*, red,   forget plot] coordinates {(1,4)};
-      \addplot[only marks, mark=*, blue,  forget plot] coordinates {(1,2)};
-      \addplot[only marks, mark=*, green!80!black, fill=white, forget plot]
-        coordinates {(0,3.2)};
-      \addplot[only marks, mark=*, green!80!black, fill=green!20, forget plot]
-        coordinates {(1,3.2)};
-
-      %--- подписи точек ---
-      \node[above right] at (axis cs:1,4)   {$(1,4)$};
-      \node[below right] at (axis cs:1,2)   {$(1,2)$};
-      \node[left]        at (axis cs:0,3.2) {$(0,3.2)$};
-    \end{axis}
-  \end{tikzpicture}
-  \caption{%
-    При $u=u_0=1$, весовые коэффициенты $w_1=0.6$, $w_2=0.4$.\\[6pt]
-    Это даёт $f_1(1)=4$, $f_2(1)=2$ и 
-    $y^*=\dfrac{0.6\cdot4 + 0.4\cdot2}{0.6+0.4}=3.2$.
-  }
-\end{figure}
-
-\paragraph{Преимущества и ограничения}
-\begin{itemize}
-  \item Ясная параметрическая форма выхода, удобная для идентификации и оптимизации.
-  \item Отсутствие тяжёлой центр-тяжести-дефаззификации на каждом шаге.
-  \item Зависимость $f_k(u)$ может плохо соответствовать интуитивно понятным лингвистическим термам.
-\end{itemize}
-
-
-\subsubsection{Метод Цукамото (Tsukamoto)}
-\label{subsubsec:tsukamoto}
-
-В методе Цукамото (1979) каждая выходная МФ должна быть монотонной и обратимой. При уровне активации $\alpha_k$ правила вычисляется единственное численное значение $y_k$, после чего все $y_k$ усредняются.
-
-\paragraph{Основные этапы}
-\begin{enumerate}
-  \item \emph{Фаззификация.} По входным данным $u$ вычислить степень срабатывания $w_k$ каждого правила.
-  \item \emph{Инверсия МФ.} Для каждой выходной функции $\mu_{Y_k}(y)$ (монотонной на рассматриваемом диапазоне) найти
-    \[
-      y_k = \mu_{Y_k}^{-1}(w_k).
-    \]
-  \item \emph{Агрегация.} Итоговое значение рассчитывается по формуле
-    \[
-      y^* = \frac{\sum_{k=1}^m w_k\,y_k}{\sum_{k=1}^m w_k}.
-    \]
-\end{enumerate}
-
-\paragraph{Пример иллюстрации}
-\begin{figure}[H]
-  \centering
-  \begin{tikzpicture}
-    \begin{axis}[
-      width=0.8\linewidth,
-      xlabel={$w_k$}, ylabel={$y_k$},
-      title={Обратное преобразование в методе Цукамото},
-      xmin=0, xmax=1, ymin=0, ymax=10,
-      xtick={0,0.3,0.8,1},
-      xticklabels={0,$w_1=0.3$,$w_2=0.8$,1},
-      ytick={2,3.8,6.8,8},
-      yticklabels={$y_{\min}=2$,$y_1=3.8$,$y_2=6.8$,$y_{\max}=8$},
-      legend pos=north west,
-      legend cell align=left,
-    ]
-      % сама линейная функция
-      \addplot[thick, purple] {2 + 6*x};
-      \addlegendentry{$y_k=\mu^{-1}_{Y_k}(w_k)$}
-
-      % точки для w1 и w2
-      \addplot[only marks, mark=*, draw=purple, fill=purple!50] 
-        coordinates {(0.3,2+6*0.3) (0.8,2+6*0.8)};
-
-      % подписи рядом с точками
-      \node[above right] at (axis cs:0.3,3.8) {$(0.3,\,3.8)$};
-      \node[above right] at (axis cs:0.8,6.8) {$(0.8,\,6.8)$};
-    \end{axis}
-  \end{tikzpicture}
-  \caption{%
-    Линейная обратная функция $y_k=2+6\,w_k$, \\
-    отмечены точки $(w_1,y_1)=(0.3,3.8)$ и $(w_2,y_2)=(0.8,6.8)$.}
-\end{figure}
-
-\paragraph{Преимущества и ограничения}
-\begin{itemize}
-  \item Итоговое значение $y^*$ определяется без интеграции, сохраняя интерпретируемость выходных МФ.
-  \item Необходима строгая монотонность и обратимость каждой функции $\mu_{Y_k}(y)$, что ограничивает гибкость.
-\end{itemize}
