@@ -16,6 +16,7 @@
 }
 
 \documentclass[14pt, russian, utf8, simple, linethick=0.4mm, hpadding=10mm]{eskdtext}
+\let\AtBeginDocument\mysvdAtBeginDocument
 
 \input{packages.tex}
 \input{preamble.tex}
@@ -24,6 +25,10 @@
 \counterwithin{lstlisting}{section}
 \include{titlepage}
 \tableofcontents
+
+\let\oldsection\section
+\renewcommand{\section}[1]{\oldsection{#1}\ESKDsignature{\normalfont\small #1}\eskdrerun}
+ 
 \include{sections/introduction}
 \include{sections/description}
 \include{sections/design}

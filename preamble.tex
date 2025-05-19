@@ -40,11 +40,13 @@
 }
 \makeatother
 
-% \let\oldsection\section
-% \renewcommand{\section}[1]{\oldsection{#1}\ESKDsignature{#1}\eskdrerun}
-
 \ESKDsectStyle{section}{\normalfont\Large\bfseries}
 \ESKDsectStyle{subsection}{\normalfont\large\bfseries}
 \ESKDsectStyle{subsubsection}{\normalfont\normalsize\bfseries}
 
+
+
+% \makeatletter
+%   \renewcommand{\ESKDtitleFontII}{\normalfont\scriptsize\selectfont}
+% \makeatother
 

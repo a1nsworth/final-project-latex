@@ -1,10 +1,39 @@
-%--- Кодировка и локализация ------------------------------------
-% \usepackage[T2A]{fontenc}
+% --- Кодировка и локализация ------------------------------------
+\usepackage[T2A]{fontenc}
 \usepackage[utf8]{inputenc}
 \usepackage[russian]{babel}
 
+% 1) Загружаем minted как float-пакет
+\usepackage[float]{minted}
+
+
+% 4) Меняем формат номера: <номер секции>.<номер листинга>
+\renewcommand{\thelisting}{\thesection.\arabic{listing}}
+
+\usepackage{xcolor}
+\definecolor{codebg}{RGB}{245,247,250}
+
+\usepackage{minted}
+\setminted{%
+  style=xcode,            % мягкая, контрастная подсветка
+  bgcolor=codebg,         % фон блока
+  frame=single,           % тонкая рамка вокруг
+  framerule=0.5pt,        % толщина рамки
+  framesep=2mm,           % отступ текста от рамки
+  rulecolor=\color{gray!60}, % цвет рамки
+  linenos,                % нумерация строк
+  numbersep=5pt,          % расстояние номера от кода
+  xleftmargin=2em,        % дополнительный отступ слева
+  autogobble,             % обрезаем общий отступ кода
+  fontsize=\footnotesize, % компактный шрифт
+  baselinestretch=1,      % одинарный межстрочный
+  breaklines,             % автоматически переносить длинные строки
+  breakindent=1em,        % отступ для перенесённых строк
+  tabsize=2               % табуляция = 2 пробела
+}
+% -------------------------------------------------
+
 \usepackage{lastpage}
-\usepackage{tempora} 
 \usepackage{newtxmath}
 
 % \usepackage{pscyr}
@@ -74,6 +103,8 @@
 
 % Стиль для listings
 \lstdefinestyle{bright}{
+  inputencoding=utf8,
+  extendedchars=true,
   backgroundcolor=\color{codebg},
   basicstyle=\ttfamily\small,
   keywordstyle=\color{keyword}\bfseries,
@@ -116,9 +147,7 @@
 
 \usepackage{natbib}
 
-
-
-
+%--- КОД ---------------------------------------------------------
 \makeatletter
 \let\origparagraph\paragraph
 \renewcommand{\paragraph}[1]{%
@@ -135,3 +164,4 @@
   %
 }
 \makeatother
+

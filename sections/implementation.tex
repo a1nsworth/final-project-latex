@@ -65,7 +65,7 @@
       \item \textbf{Как читать:}  
         \begin{itemize}
           \item Ящик (box) — межквартильный интервал (Q1–Q3), линия внутри — медиана.  
-          \item Усы (whiskers) — выборочные границы (обычно Q1−-1.5 \cdot IQR, Q3+1.5 \cdot IQR).  
+          \item Усы (whiskers) — выборочные границы (обычно $Q1-1.5 \cdot IQR, Q3+1.5 \cdot IQR$).  
           \item Точки за усами — выбросы.
         \end{itemize}
       \item \textbf{Рекомендации:}  
@@ -221,3 +221,364 @@
   \item \textbf{Cluster 2 (virginica)}: правый верхний угол, 36 из 50 Virginica (72\%), несколько Versicolor «зашли» внутрь.
   \item Итог: лепестковые признаки дают главную разделительную информацию, чашелистики лишь уточняют границы.
 \end{itemize}
+
+\subsection{Руководство пользователя}\label{sec:user-guide}
+
+В этом разделе описывается, как запускать скрипт для нечеткой логики Iris из командной строки и какие аргументы ему доступны.
+
+\subsubsection{Использование}
+\mint{python}/python iris_fuzzy.py [--n_terms N] [--data_noise_std STD] [--trials T] [--cv CV_FOLDS]/
+
+\subsubsection{Параметры}
+\begin{description}
+  \item[\texttt{--n\_terms \textit{N}}]  
+
+    
+    Количество нечетких терминов на признак (целое, по умолчанию: \texttt{3}).  
+    Необходимо задать значение не меньше 2.  
+    Определяет детализацию разбиения входных признаков.
+
+  \item[\texttt{--data\_noise\_std \textit{STD}}]  
+    
+    
+    Стандартное отклонение гауссовского шума, добавляемого к данным (вещественное, по умолчанию: \texttt{0.01}).  
+    Установите \texttt{0.0}, чтобы отключить внесение шума.
+
+  \item[\texttt{--trials \textit{T}}]  
+    
+    
+    Количество итераций оптимизации Optuna (целое, по умолчанию: \texttt{1500}).  
+    Определяет число проверяемых наборов параметров.
+
+  \item[\texttt{--cv \textit{CV\_FOLDS}}]  
+    
+    
+    Число фолдов для кросс-валидации (целое, по умолчанию: \texttt{3}).  
+    Определяет разбиение на стратифицированные фолды.
+\end{description}
+
+\subsubsection{Примеры}
+\begin{itemize}
+  \item Запуск с настройками по умолчанию:
+    
+    \mint{python}/python iris_fuzzy.py/
+
+  \item Использовать 5 терминов на признак и отключить шум:
+    
+    \mint{python}/python iris_fuzzy.py --n_terms 5 --data_noise_std 0.0/
+
+  \item Провести 3000 итераций оптимизации с 5-кратной кросс-валидацией:
+    
+    \mint{python}/python iris_fuzzy.py --trials 3000 --cv 5/
+\end{itemize}
+
+\subsection{Нормализация признаков: алгоритм Min–Max и его аналоги}
+
+При подготовке данных для нечетких и гибридных моделей важно привести все признаки к сопоставимому масштабу. Одним из самых простых и распространённых способов является \emph{Min–Max нормализация}, однако существует множество альтернатив — от классической стандартизации до робастных и нелинейных преобразований. Ниже приведены подробные описания алгоритма Min–Max, его варианты и основные аналоги.
+
+\medskip
+\noindent\textbf{1. Алгоритм Min–Max нормализации}  
+Пусть у нас есть матрица признаков \(X \in \mathbb{R}^{n\times d}\), где \(n\) — число объектов, \(d\) — число признаков. Для каждого признака \(j = 1\ldots d\) вычисляем:
+\[
+  x_j^{\min} = \min_{i=1\ldots n} X_{i j},\qquad
+  x_j^{\max} = \max_{i=1\ldots n} X_{i j}.
+\]
+Далее каждый объект \(i\) и признак \(j\) преобразуется по формуле
+\[
+  X'_{i j}
+  = \frac{X_{i j} - x_j^{\min}}{x_j^{\max} - x_j^{\min}},
+  \quad X'_{i j} \in [0,1].
+\]
+\paragraph{Псевдокод:}
+\begin{minted}{python}
+for j in 1..d:
+    xmin = min_i X[i][j]
+    xmax = max_i X[i][j]
+    range = xmax - xmin
+    if range == 0:
+        for i in 1..n:
+            X_norm[i][j] = 0.0   # или оставить оригинал
+    else:
+        for i in 1..n:
+            X_norm[i][j] = (X[i][j] - xmin) / range
+\end{minted}
+\paragraph{Сложность:} \(O(n\,d)\) по времени и \(O(1)\) дополнительной памяти (кроме хранения самого массива).
+
+\medskip
+\noindent\textbf{2. Расширенные варианты Min–Max}  
+\begin{itemize}
+  \item \emph{Масштабирование в произвольный отрезок \([a,b]\):}
+    \[
+      X''_{ij} = a + (b - a)\,\frac{X_{ij} - x_j^{\min}}{x_j^{\max} - x_j^{\min}}.
+    \]
+  \item \emph{Усечённая нормализация:} после вычисления \(X'_{ij}\) удаляем/отбрасываем точки с \(X'_{ij}\notin[0,1]\), если в данных появились новые выбросы.
+  \item \emph{Adaptive Min–Max:} вычисление \(x_j^{\min}\), \(x_j^{\max}\) по доверительному интервалу, например, \(\bigl[Q_1 - 1.5\,\mathrm{IQR},\,Q_3 + 1.5\,\mathrm{IQR}\bigr]\) вместо фактических экстремумов.
+\end{itemize}
+
+\medskip
+\noindent\textbf{3. Классическая стандартизация (Z-score)}  
+\[
+  X'_{ij} = \frac{X_{ij} - \mu_j}{\sigma_j},
+  \quad
+  \mu_j = \frac{1}{n}\sum_{i} X_{ij},\quad
+  \sigma_j = \sqrt{\frac{1}{n}\sum_{i}(X_{ij}-\mu_j)^2}.
+\]
+После такого преобразования признак имеет \(\mathrm{E}[X'] = 0\) и \(\mathrm{Var}[X'] = 1\). Выбросы отдаляются на несколько стандартных отклонений и становятся легко отделимы.
+
+\medskip
+\noindent\textbf{4. Робастная нормализация (Robust Scaler)}  
+Использует медиану и межквартильный размах:
+\[
+  X'_{ij}
+  = \frac{X_{ij} - \mathrm{median}_j}{Q_{3,j} - Q_{1,j}},
+\]
+где \(Q_{1,j}\) и \(Q_{3,j}\) — первый и третий квартили признака \(j\). Меньшая чувствительность к выбросам.
+
+\medskip
+\noindent\textbf{5. Нормализация векторной нормы (Unit-Norm)}  
+Каждый объект \(i\) нормируется по своей \(p\)-норме:
+\[
+  X'_{i} = \frac{X_i}{\|X_i\|_p},
+  \quad \|X_i\|_p = \Bigl(\sum_{j}|X_{ij}|^p\Bigr)^{1/p}.
+\]
+Часто используют \(p=2\) (Euclidean norm). Полезно при работе с косинусным сходством.
+
+\medskip
+\noindent\textbf{6. Квантильное и нелинейное преобразование}  
+\begin{itemize}
+  \item \emph{Quantile Transformer:} отображает эмпирический распределение в равномерное или нормальное.
+  \item \emph{Log-преобразование:} \(X' = \log(1 + X)\) — уменьшает правостороннюю асимметрию.
+  \item \emph{Box–Cox, Yeo–Johnson:} семейства преобразований, приближающих распределение к нормальному.
+\end{itemize}
+
+
+\subsubsection{Пример кода: добавление шума и Min–Max нормализация}
+\label{sec:noise_scaling_example}
+\begin{listing}[ht]
+\begin{minted}{python}
+for i in range(10):
+  map(lambda i**2, i)
+# 1. Загрузка данных и приведение типов
+iris = load_iris()
+X    = iris.data.astype(np.float32)   # четыре признака: sepal/petal length & width
+y    = iris.target.astype(np.int64)   # метки классов
+
+# 2. Добавление гауссова шума (если NOISE_IN > 0)
+if NOISE_IN:
+    X += np.random.default_rng(42).normal(0, NOISE_IN, size=X.shape).astype(np.float32)
+    
+# 3. Min–Max нормализация каждого признака в [0, 1]
+X = MinMaxScaler().fit_transform(X).astype(np.float32)
+\end{minted}
+\caption{Min Max scalling}
+\end{listing}
+\paragraph{Пояснения к коду:}
+\begin{itemize}
+  \item \textbf{Загрузка и приведение типов:}  
+    \verb|load_iris()| возвращает массив \verb|iris.data| размерности $(150\times4)$ и вектор меток \verb|iris.target| длины 150.  
+    Приведение к \verb|float32| и \verb|int64| нужно для эффективности вычислений (особенно на GPU).
+  
+  \item \textbf{Добавление шума:}
+    \[
+      X \leftarrow X + \varepsilon,\quad \varepsilon \sim \mathcal{N}(0,\,\sigma^2),\;
+      \sigma=\texttt{NOISE\_IN}.
+    \]
+    Семя \verb|42| обеспечивает детерминированность. Такой шаг смягчает влияние редких выбросов и проверяет устойчивость модели к флуктуациям.
+  
+  \item \textbf{Min–Max нормализация:}  
+    Для каждого признака $j$ вычисляются экстремумы
+    \[
+      x_j^{\min} = \min_i X_{ij}, \quad
+      x_j^{\max} = \max_i X_{ij},
+    \]
+    после чего
+    \[
+      X'_{ij} = \frac{X_{ij} - x_j^{\min}}{x_j^{\max} - x_j^{\min}},\quad
+      X'_{ij}\in[0,1].
+    \]
+    Это обеспечивает единый масштаб всех признаков, снижая диспропорцию и избегая «доминирования» параметров с большим диапазоном.
+  
+  \item \textbf{Дальнейшая обработка:}  
+    После нормализации массив $X$ готов к обучению нечеткой сети. Метки $y$ не меняются и используются для расчёта метрик качества.
+\end{itemize}
+
+\subsection{Параллелизация на GPU и ключевые фаззи–хелперы}
+
+Ниже приводится описание механизма автоматического выбора устройства (CPU/GPU) и ключевых функций \verb|mu_cp| и \verb|opportunity| в вашем коде.
+
+\paragraph{Выбор устройства и подготовка констант}
+\begin{minted}{python}
+device = "cuda" if torch.cuda.is_available() else "cpu"
+print("Using", device)
+TAU   = torch.linspace(0.001, 1.0, 100, device=device)
+YGRID = torch.linspace(0, N_TERMS - 1, 200, device=device)
+\end{minted}
+
+\begin{itemize}
+  \item Константы \(\mathrm{TAU}\) и \(\mathrm{YGRID}\) создаются непосредственно на выбранном устройстве, что позволяет всем последующим тензорным операциям идти на GPU.
+\end{itemize}
+
+\paragraph{Функция $\mu_{CP}$}
+
+\begin{minted}{python}
+def mu_cp(a1, a2, b1, b2):
+    a1, a2 = a1.float(), a2.float()
+    b1 = b1.float() if torch.is_tensor(b1) else torch.tensor(b1, dtype=torch.float32, device=device)
+    diff = (a1 - a2).unsqueeze(1)
+    st   = torch.sqrt(-2.0 * torch.log(TAU)).unsqueeze(0)
+    b1e  = b1.unsqueeze(1) if b1.dim()==1 else b1.view(1,1)
+    num  = torch.where(
+        (a1<=a2).unsqueeze(1),
+        diff - b1e*st,
+        diff + b1e*st
+    )
+    return torch.exp(-(num**2)/(2*(b2**2))).float()
+\end{minted}
+
+Здесь:
+\begin{align*}
+  &\tau_i \in \mathrm{TAU},\quad i=1\ldots 100,\\
+  &\mathrm{diff} = a_1 - a_2,\quad \mathrm{st}_i = \sqrt{-2\,\ln \tau_i},\\
+  &\mathrm{num}_{j,i} =
+    \begin{cases}
+      \mathrm{diff}_j - b_1\,\mathrm{st}_i, & \text{если }a_{1j} \le a_{2j},\\
+      \mathrm{diff}_j + b_1\,\mathrm{st}_i, & \text{иначе},
+    \end{cases}\\
+  &\mu_{CP}(j,i) = \exp\!\Bigl(-\tfrac{\mathrm{num}_{j,i}^2}{2\,b_2^2}\Bigr).
+\end{align*}
+
+Функция $\mu_{CP}$ (Conditional Possibility) возвращает матрицу размеров $\text{batch}\times|\mathrm{TAU}|$.
+
+\paragraph{Функция \texttt{opportunity}}
+
+\begin{minted}{python}
+def opportunity(a1, a2, b1, b2):
+    m = mu_cp(a1, a2, b1, b2)
+    return torch.max(torch.minimum(m, TAU), dim=1).values
+\end{minted}
+
+\begin{definition}
+\[
+  \mathrm{opportunity}(j) 
+  = \max_{i}\;\min\bigl(\mu_{CP}(j,i),\;\tau_i\bigr),
+  \quad j=1\ldots\text{batch}.
+\]
+На выходе получаем вектор длины \textbf{batch} агрегирующий \\ фаззи-принадлежности.
+\end{definition}
+
+\subsubsection{Преимущества параллелизации}
+
+\begin{itemize}
+  \item \textbf{Векторизация.} Все базовые операции ($\exp, \log, \sqrt$), сравнения, минимум/максимум) выполняются над целыми тензорами разом, без Python-циклов по элементам.
+  \item \textbf{Broadcasting.} Размерности автоматически выравниваются, что упрощает работу с массивами разных форм.
+  \item \textbf{CUDA-ядра.} При наличии GPU вычисления исполняются в оптимизированных CUDA-ядрах, что даёт существенное ускорение.
+\end{itemize}
+
+\subsubsection{Итоговая схема вычислений}
+
+\begin{enumerate}
+  \item Инициализация: выбор \(\texttt{device}\) и создание констант на GPU.
+  \item Вычисление \(\mu_{CP}\) для каждого класса и признака через \verb|mu_cp|.
+  \item Агрегация по порогам \(\tau\) через \verb|opportunity|.
+  \item Дефаззификация с использованием \(\mathrm{YGRID}\) и выходных Гауссовых МФ для получения финальных предсказаний.
+\end{enumerate}
+
+Таким образом, код автоматически распараллеливает все тяжелые операции на GPU, обеспечивая высокую производительность при обучении и предсказании.
+
+
+\subsection{Функция \texttt{predict}: алгоритм и блок-схема}
+
+Ниже приводится код функции \texttt{predict} и её пояснение в виде блока-схемы.
+
+\begin{minted}[fontsize=\small]{python}
+def predict(vec, xb, noise, defuzz):
+    # 1. Преобразование вектора параметров
+    v = torch.tensor(vec, dtype=torch.float32, device=device)
+    fcnt = n_classes * n_features * 3
+    fp, tp = v[:fcnt].view(n_classes, n_features, 3), v[fcnt:]
+    means, sigmas, terms = fp[:, :, 0], torch.clamp(fp[:, :, 1], 1e-3), fp[:, :, 2].long()
+    centers, sigs = tp[::2], torch.clamp(tp[1::2], 1e-3)
+
+    # 2. Вычисление firing strengths (сил срабатывания)
+    fires = torch.zeros(xb.size(0), N_TERMS, device=device)
+    for c in range(n_classes):
+        for f in range(n_features):
+            w = opportunity(
+                means[c, f].expand(xb.size(0)),
+                xb[:, f],
+                sigmas[c, f],
+                noise
+            )
+            fires[:, terms[c, f]] = torch.maximum(fires[:, terms[c, f]], w)
+
+    # 3. Генерация выходных МФ по YGRID и параметрам centers, sigs
+    mu_out = torch.exp(-((YGRID - centers[:, None]) ** 2) / (2 * (sigs ** 2)[:, None]))
+
+    # 4. Агрегация: max-min композиция
+    agg = torch.max(
+        torch.minimum(fires.unsqueeze(-1), mu_out.unsqueeze(0)),
+        dim=1
+    ).values
+
+    # 5. Дефаззификация
+    if defuzz == "centroid":
+        s = agg.sum(1)
+        y = torch.where(s > 0, (agg * YGRID).sum(1) / s, torch.zeros_like(s))
+    elif defuzz == "max":
+        _, idx = torch.max(agg, 1)
+        y = YGRID[idx]
+    elif defuzz == "mom":
+        mx, _ = torch.max(agg, 1)
+        mask = agg == mx[:, None]
+        y = (mask * YGRID).sum(1) / (mask.sum(1) + 1e-9)
+    else:  # bisector
+        half = agg.sum(1) / 2
+        idx = torch.argmax((agg.cumsum(1) >= half[:, None]).float(), 1)
+        y = YGRID[idx]
+
+    # 6. Округление, ограничение и перевод в numpy
+    return torch.round(y).clamp(0, n_classes - 1).cpu().numpy().astype(int)
+\end{minted}
+
+\medskip
+
+\noindent Ниже — блок-схема алгоритма:
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[node distance=1.2cm, auto,
+  block/.style    = {rectangle, draw, minimum width=3cm, minimum height=1cm, text centered},
+  decision/.style = {diamond, draw, aspect=2, text centered, inner sep=0pt},
+  arrow/.style    = {->, thick}
+]
+  \node (start) [block] {Начало};
+  \node (parse) [block, below=of start] {Разбор \texttt{vec} $\to$ fp, tp};
+  \node (compute) [block, below=of parse] {Compute \texttt{means, sigmas, terms, centers, sigs}};
+  \node (fires) [block, below=of compute] {Вычислить \texttt{fires} через \texttt{opportunity}};
+  \node (muout) [block, below=of fires] {Сформировать \texttt{mu\_out} по YGRID};
+  \node (agg) [block, below=of muout] {Агрегация: $\max\min$ композиция $\to$ \texttt{agg}};
+  \node (defuz) [decision, below=of agg] {Метод дефаззификации?};
+  \node (centroid) [block, below left=of defuz, xshift=-1cm] {centroid};
+  \node (max)      [block, below=of defuz]              {max};
+  \node (others)   [block, below right=of defuz, xshift=1cm] {mom/bisector};
+  \node (round)    [block, below=of others, yshift=-1cm] {Округление и \texttt{clamp}};
+  \node (end)      [block, below=of round] {Выход (numpy array)};
+
+  \draw [arrow] (start)    -- (parse);
+  \draw [arrow] (parse)    -- (compute);
+  \draw [arrow] (compute)  -- (fires);
+  \draw [arrow] (fires)    -- (muout);
+  \draw [arrow] (muout)    -- (agg);
+  \draw [arrow] (agg)      -- (defuz);
+
+  \draw [arrow] (defuz.west) -- node[anchor=east]{centroid} (centroid);
+  \draw [arrow] (defuz)      -- node[anchor=west]{max}      (max);
+  \draw [arrow] (defuz.east) -- node[anchor=west]{mom/bis}  (others);
+
+  \draw [arrow] (centroid) |- (round);
+  \draw [arrow] (max)      -- (round);
+  \draw [arrow] (others)   -- (round);
+  \draw [arrow] (round)    -- (end);
+\end{tikzpicture}
+\caption{Блок-схема функции \texttt{predict}}
+\end{figure}
