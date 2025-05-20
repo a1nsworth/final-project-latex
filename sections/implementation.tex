@@ -469,7 +469,7 @@ def opportunity(a1, a2, b1, b2):
 \subsubsection{Преимущества параллелизации}
 
 \begin{itemize}
-  \item \textbf{Векторизация.} Все базовые операции ($\exp, \log, \sqrt$), сравнения, минимум/максимум) выполняются над целыми тензорами разом, без Python-циклов по элементам.
+  \item \textbf{Векторизация.} Все базовые операции ($\exp, \log, \sqrt{}$), сравнения, минимум/максимум) выполняются над целыми тензорами разом, без Python-циклов по элементам.
   \item \textbf{Broadcasting.} Размерности автоматически выравниваются, что упрощает работу с массивами разных форм.
   \item \textbf{CUDA-ядра.} При наличии GPU вычисления исполняются в оптимизированных CUDA-ядрах, что даёт существенное ускорение.
 \end{itemize}
@@ -486,9 +486,7 @@ def opportunity(a1, a2, b1, b2):
 Таким образом, код автоматически распараллеливает все тяжелые операции на GPU, обеспечивая высокую производительность при обучении и предсказании.
 
 
-\subsection{Функция \texttt{predict}: алгоритм и блок-схема}
-
-Ниже приводится код функции \texttt{predict} и её пояснение в виде блока-схемы.
+\subsection{Функция \texttt{predict}}
 
 \begin{minted}[fontsize=\small]{python}
 def predict(vec, xb, noise, defuzz):
@@ -540,45 +538,326 @@ def predict(vec, xb, noise, defuzz):
     return torch.round(y).clamp(0, n_classes - 1).cpu().numpy().astype(int)
 \end{minted}
 
-\medskip
+\paragraph{Этап 1: Преобразование вектора параметров}
+\begin{itemize}
+  \item \texttt{vec}: одномерный массив параметров (правил и выходных МФ).
+  \item Вычисление \texttt{fcnt = n\_classes * n\_features * 3}: количество параметров для входных Гауссовых (средние, sigma, индекс терма).
+  \item \texttt{fp}: тензор формы \([n\_classes, n\_features, 3]\) — параметры входных МФ.
+  \item \texttt{tp}: оставшиеся параметры формируют пары \((center, sigma)\) для выходных МФ.
+  \item \texttt{means, sigmas, terms}: средние, ширины (зажимаем минимумом 1e-3 для стабильности), индексы термов для агрегации.
+  \item \texttt{centers, sigs}: параметры выходных функций принадлежности.
+\end{itemize}
 
-\noindent Ниже — блок-схема алгоритма:
+\paragraph{Этап 2: Вычисление сил срабатывания (firing strengths)}  
+\begin{itemize}
+  \item {\bf Инициализация буфера:}
+  \[
+    \begin{split}
+      \texttt{fires}
+      &= \texttt{torch.zeros([B,N\_TERMS],device=device)}, \\
+      \text{где }B &= \texttt{xb.size(0)}.
+    \end{split}
+  \]
+  \item {\bf Основной цикл по классам и признакам:}
+    \[
+      \forall\,c\in\{1,\dots,n\_classes\},\quad
+      f\in\{1,\dots,n\_features\}.
+    \]
+    \begin{enumerate}
+      \item {\bf Выбор параметра:}
+        \[
+          \mu_{\text{in}} = \texttt{means}[c,f]\in\mathbb{R}.
+        \]
+      \item {\bf Расширение на батч:}
+        \[
+          \mu_{\text{in}}
+          \xrightarrow{\texttt{.expand}(B)}
+          [\underbrace{B}_{\text{batch}}].
+        \]
+      \item {\bf Вычисление степени соответствия:}
+        \[
+          \omega
+          = \texttt{opportunity}(
+              \mu_{\text{in}},
+              xb[:,f],
+              \sigma_{c,f},
+              \texttt{noise}
+            ),
+          \quad \omega\in\mathbb{R}^B.
+        \]
+      \item {\bf Обновление буфера:}
+        \[
+          \texttt{fires}[:,t]
+          = \max\bigl(\texttt{fires}[:,t],\,\omega\bigr),
+          \quad t = \texttt{terms}[c,f].
+        \]
+    \end{enumerate}
+  \item {\bf Особенности и эффективность:}  
+    несмотря на Python-циклы, все тяжёлые операции (\(\exp,\min,\max\)) выполняются в одном CUDA-ядре,  
+    а тензор \texttt{fires} создаётся заранее — без повторных аллокаций.
+\end{itemize}
 
-\begin{figure}[h]
-\centering
-\begin{tikzpicture}[node distance=1.2cm, auto,
-  block/.style    = {rectangle, draw, minimum width=3cm, minimum height=1cm, text centered},
-  decision/.style = {diamond, draw, aspect=2, text centered, inner sep=0pt},
-  arrow/.style    = {->, thick}
-]
-  \node (start) [block] {Начало};
-  \node (parse) [block, below=of start] {Разбор \texttt{vec} $\to$ fp, tp};
-  \node (compute) [block, below=of parse] {Compute \texttt{means, sigmas, terms, centers, sigs}};
-  \node (fires) [block, below=of compute] {Вычислить \texttt{fires} через \texttt{opportunity}};
-  \node (muout) [block, below=of fires] {Сформировать \texttt{mu\_out} по YGRID};
-  \node (agg) [block, below=of muout] {Агрегация: $\max\min$ композиция $\to$ \texttt{agg}};
-  \node (defuz) [decision, below=of agg] {Метод дефаззификации?};
-  \node (centroid) [block, below left=of defuz, xshift=-1cm] {centroid};
-  \node (max)      [block, below=of defuz]              {max};
-  \node (others)   [block, below right=of defuz, xshift=1cm] {mom/bisector};
-  \node (round)    [block, below=of others, yshift=-1cm] {Округление и \texttt{clamp}};
-  \node (end)      [block, below=of round] {Выход (numpy array)};
+\paragraph{Этап 3: Генерация выходных функций принадлежности}  
+\begin{itemize}
+  \item {\bf Параметры выходных МФ:}  
+    $$
+      \texttt{centers}\in\mathbb{R}^{N\_{TERMS}},\quad
+      \texttt{sigs}\in\mathbb{R}^{N\_{TERMS}}.
+    $$
+  \item {\bf Построение матрицы} $\mu_{\text{out}}\in\mathbb{R}^{N\_{TERMS}\times G}$  
+    (где $G = |\texttt{YGRID}|$):  
+    $$
+      \mu_{\text{out}}[i,j]
+      = \exp\Bigl(
+          -\frac{(\texttt{YGRID}_j - \texttt{centers}_i)^2}
+                {2\,\texttt{sigs}_i^2}
+        \Bigr).
+    $$
+  \item {\bf Векторизация:}  
+    \texttt{centers[:,None]}~$\to$~$[N\_{TERMS},1]$,  
+    вычитание \texttt{YGRID} через broadcasting~$\to$~$[N\_{TERMS},G]$,  
+    и $\exp$ — всё в одном запуске CUDA.
+  \item {\bf Кэширование:}  
+    при неизменных параметрах выходные МФ можно вычислить один раз и переиспользовать.
+\end{itemize}
 
-  \draw [arrow] (start)    -- (parse);
-  \draw [arrow] (parse)    -- (compute);
-  \draw [arrow] (compute)  -- (fires);
-  \draw [arrow] (fires)    -- (muout);
-  \draw [arrow] (muout)    -- (agg);
-  \draw [arrow] (agg)      -- (defuz);
+\paragraph{Этап 4: Агрегация (max–min композиция)}  
+\begin{itemize}
+  \item {\bf Подготовка тензоров:}  
+  \[
+    \begin{split}
+      F &= \texttt{fires.unsqueeze(-1)}
+            \;\in\;\mathbb{R}^{B\times N_{\text{TERMS}}\times 1},\\
+      M &= \mu_{\text{out}}.\texttt{unsqueeze(0)}
+            \;\in\;\mathbb{R}^{1\times N_{\text{TERMS}}\times G}.
+    \end{split}
+  \]
+  \item {\bf Broadcasting:}  
+    $F,M\in\mathbb{R}^{B\times N\_{TERMS}\times G}$.
+  \item {\bf Поэлементный минимум:}  
+    $$
+      C = \min(F,\,M)
+      \;\in\;\mathbb{R}^{B\times N\_{TERMS}\times G}.
+    $$
+  \item {\bf Сведение по термам (максимум):}  
+    $$
+      \texttt{agg}_{k,j}
+      = \max_{i=1,\dots,N\_{TERMS}} C_{k,i,j},
+      \quad \texttt{agg}\in\mathbb{R}^{B\times G}.
+    $$
+  \item {\bf Интерпретация:}  
+    каждая строка $\texttt{agg}[k]$ — функция принадлежности выходного значения для $k$-го образца.
+\end{itemize}
 
-  \draw [arrow] (defuz.west) -- node[anchor=east]{centroid} (centroid);
-  \draw [arrow] (defuz)      -- node[anchor=west]{max}      (max);
-  \draw [arrow] (defuz.east) -- node[anchor=west]{mom/bis}  (others);
+\paragraph{Этап 5: Дефаззификация}  
+\begin{itemize}
+  \item {\bf Centroid:}  
+    $$
+      y_k
+      = \frac{\sum_{j=1}^G \texttt{agg}_{k,j}\,\texttt{YGRID}_j}
+             {\sum_{j=1}^G \texttt{agg}_{k,j}},
+    $$
+    защищено через \texttt{torch.where} от деления на ноль.
+  \item {\bf Max-membership:}  
+    $$
+      y_k
+      = \texttt{YGRID}_{\displaystyle\arg\max_j \texttt{agg}_{k,j}}.
+    $$
+  \item {\bf MOM (Mean of Maxima):}  
+    $$
+      m_k = \max_j \texttt{agg}_{k,j},\quad
+      y_k
+      = \frac{\sum_{j:\,\texttt{agg}_{k,j}=m_k} \texttt{YGRID}_j}
+             {\sum_{j:\,\texttt{agg}_{k,j}=m_k} 1}.
+    $$
+  \item {\bf Bisector:}  
+    найдём наименьшее $l_k$ такое, что
+    $$
+      \sum_{j=1}^{l_k} \texttt{agg}_{k,j}
+      \;\ge\;
+      \tfrac12 \sum_{j=1}^G \texttt{agg}_{k,j},
+    $$
+    тогда
+    $$
+      y_k = \texttt{YGRID}_{l_k}.
+    $$
+\end{itemize}
 
-  \draw [arrow] (centroid) |- (round);
-  \draw [arrow] (max)      -- (round);
-  \draw [arrow] (others)   -- (round);
-  \draw [arrow] (round)    -- (end);
-\end{tikzpicture}
-\caption{Блок-схема функции \texttt{predict}}
+\paragraph{Этап 6: Окончательная обработка}
+\begin{itemize}
+  \item \texttt{torch.round} и \texttt{clamp}: приводим предсказание к целочисленным классам \([0, n\_classes-1]\).
+  \item Переносим на CPU и в numpy для совместимости с остальной частью пайплайна.
+\end{itemize}
+
+
+\subsection{Целевая функция и запуск оптимизации}
+
+В этом разделе подробно описывается, как формируется целевая функция для \texttt{Optuna} и как происходит процесс подбора гиперпараметров.
+
+\paragraph{Описание}  
+Мы создаём функцию \texttt{objective(trial)}, которая на каждом шаге:
+\begin{enumerate}
+  \item Генерирует вектор параметров \(\vec v\) через \texttt{build\_vec(trial)}, включая параметры входных и выходных функций принадлежности.
+  \item Подбирает значение шума \texttt{noise} в лог-шкале и метод дефаззификации \texttt{defm}.
+  \item Делит данные на \(\texttt{CV\_FOLDS}\) стратифицированных фолдов и для каждого фолда:
+    \begin{itemize}
+      \item Вычисляет предсказание \(\hat y=\texttt{predict}(\vec v, X_{\text{val}}, \texttt{noise}, \texttt{defm})\).
+      \item Считает макро-F1 между истинными и предсказанными метками.
+    \end{itemize}
+  \item Возвращает средний макро-F1, который Optuna стремится максимизировать.
+\end{enumerate}
+
+\paragraph{Код}  
+\begin{minted}[fontsize=\small]{python}
+def objective(trial):
+    # 1) сборка параметров
+    vec   = build_vec(trial)
+    noise = trial.suggest_float("noise", 0.05, 1.0, log=True)
+    defm  = trial.suggest_categorical("defuzz",
+             ["centroid","max","mom","bisector"])
+    # 2) кросс-валидация
+    skf = StratifiedKFold(CV_FOLDS, shuffle=True, random_state=42)
+    scores = []
+    for _, val in skf.split(X, y):
+        yp = predict(vec,
+                     torch.tensor(X[val], device=device),
+                     noise, defm)
+        scores.append(f1_score(y[val], yp, average="macro"))
+    # 3) возвращаем средний макро-F1
+    return float(np.mean(scores))
+
+# Запуск оптимизации
+study = optuna.create_study(
+    direction="maximize",
+    sampler=optuna.samplers.TPESampler(multivariate=True)
+)
+study.optimize(objective, n_trials=5000,
+               n_jobs=1, show_progress_bar=True)
+\end{minted}
+
+\subsection{Оценка на отложенной выборке}
+
+После завершения CV мы фиксируем лучшие параметры и оцениваем модель на ранее неиспользованных данных.
+
+\paragraph{Описание}  
+\begin{itemize}
+  \item Отделяем 10\% данных в качестве hold-out.
+  \item По лучшему вектору \(\vec v^*\), шуму \(\texttt{noise}^*\) и методу дефаззификации \(\texttt{defm}^*\) делаем финальное предсказание.
+  \item Выводим подробный \texttt{classification\_report} и общую точность.
+\end{itemize}
+
+\paragraph{Код}  
+\begin{minted}[fontsize=\small]{python}
+# Формируем hold-out
+_, X_te, _, y_te = train_test_split(
+    X, y, stratify=y, test_size=0.1,
+    random_state=42
+)
+# Предсказание и метрики
+y_hat = predict(best_vec,
+                torch.tensor(X_te, device=device),
+                noise_best, defm_best)
+print(classification_report(
+    y_te, y_hat, target_names=iris.target_names))
+print("Accuracy:", accuracy_score(y_te, y_hat))
+\end{minted}
+
+\subsection{Результат работы}
+
+В результате проделанной работы были получены следующие основные результаты: ускорение обучения на GPU, высокое качество классификации на отложенной выборке и интерпретируемые нечеткие правила.
+
+\paragraph{1. Ускорение обучения}  
+На рисунке \ref{fig:train_time} показано время обучения модели на CPU и GPU в зависимости от размера выборки. При малых объёмах (до $10^4$ образцов) выигрыш невелик, однако при больших данных (от $10^5$ до $10^6$) GPU обеспечивает многократное ускорение (до $\sim$60×).
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=0.8\linewidth]{images/training_time.png}
+  \caption{Время обучения: сравнение CPU и GPU при разных объёмах выборки}
+  \label{fig:train_time}
 \end{figure}
+
+\paragraph{2. Качество классификации}  
+Тестовая выборка (10\% исходных данных) была классифицирована с помощью оптимальной конфигурации параметров, при распределение входных данных $\sigma=0.15$. В таблице \ref{tab:class_report} приведён подробный отчёт.
+
+\begin{table}[H]
+  \centering
+  \begin{tabular}{lrrrr}
+    \toprule
+    Класс & Precision & Recall & F1-score & Support \\
+    \midrule
+    setosa     & 1.00 & 1.00 & 1.00 & 45 \\
+    versicolor & 0.91 & 0.96 & 0.93 & 45 \\
+    virginica  & 0.95 & 0.91 & 0.93 & 45 \\
+    \midrule
+    Accuracy   & \multicolumn{3}{c}{0.96} & 135 \\
+    Macro avg  & 0.96 & 0.96 & 0.96 & 135 \\
+    Weighted avg & 0.96 & 0.96 & 0.96 & 135 \\
+    \bottomrule
+  \end{tabular}
+  \caption{Отчёт классификации на тестовой выборке}
+  \label{tab:class_report}
+\end{table}
+
+\paragraph{3. Визуализация функций принадлежности}  
+\begin{itemize}
+  \item \textbf{Выходные MF.} На рисунке \ref{fig:mf_out} показаны гауссовы функции принадлежности для каждого класса на сетке $YGRID$.
+  \item \textbf{Входные MF.} Рисунки \ref{fig:mf_in_setosa}–\ref{fig:mf_in_virginica} иллюстрируют функции принадлежности (antecedent MFs) по четырём признакам для каждого класса.
+\end{itemize}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.7\linewidth]{images/mf_out.png}
+  \caption{Выходные функции принадлежности (consequent MFs)}
+  \label{fig:mf_out}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.9\linewidth]{images/mf_in_setosa.png}
+  \caption{Antecedent MFs для класса \texttt{setosa}}
+  \label{fig:mf_in_setosa}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.9\linewidth]{images/mf_in_versicolor.png}
+  \caption{Antecedent MFs для класса \texttt{versicolor}}
+  \label{fig:mf_in_versicolor}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.9\linewidth]{images/mf_in_virginica.png}
+  \caption{Antecedent MFs для класса \texttt{virginica}}
+  \label{fig:mf_in_virginica}
+\end{figure}
+
+\subsection*{Обученные нечёткие правила}
+
+\noindent\textbf{Rule 1 (setosa):}  
+\begin{align*}
+  \textbf{IF}\;&\text{sepal length (cm) is \emph{medium}}\;\bigl(\mu=-0.65,\;\sigma=1.47\bigr)\\
+                &\quad\land\;\text{sepal width  (cm) is \emph{low}}   \;\bigl(\mu=-0.25,\;\sigma=1.60\bigr)\\
+                &\quad\land\;\text{petal length (cm) is \emph{high}}  \;\bigl(\mu=0.90,\;\sigma=1.23\bigr)\\
+                &\quad\land\;\text{petal width  (cm) is \emph{high}}  \;\bigl(\mu=0.04,\;\sigma=1.64\bigr)\\
+  \textbf{THEN}\;&\mathcal{N}\bigl(\mu=0.32,\;\sigma=0.24\bigr)
+\end{align*}
+
+\noindent\textbf{Rule 2 (versicolor):}  
+\begin{align*}
+  \textbf{IF}\;&\text{sepal length (cm) is \emph{low}}   \;\bigl(\mu=0.16,\;\sigma=1.16\bigr)\\
+                &\quad\land\;\text{sepal width  (cm) is \emph{low}}   \;\bigl(\mu=0.55,\;\sigma=0.31\bigr)\\
+                &\quad\land\;\text{petal length (cm) is \emph{high}}  \;\bigl(\mu=1.24,\;\sigma=1.47\bigr)\\
+                &\quad\land\;\text{petal width  (cm) is \emph{low}}   \;\bigl(\mu=-1.74,\;\sigma=1.13\bigr)\\
+  \textbf{THEN}\;&\mathcal{N}\bigl(\mu=2.68,\;\sigma=0.16\bigr)
+\end{align*}
+
+\noindent\textbf{Rule 3 (virginica):}  
+\begin{align*}
+  \textbf{IF}\;&\text{sepal length (cm) is \emph{medium}}\;\bigl(\mu=-0.56,\;\sigma=1.63\bigr)\\
+                &\quad\land\;\text{sepal width  (cm) is \emph{medium}}\;\bigl(\mu=-1.92,\;\sigma=1.88\bigr)\\
+                &\quad\land\;\text{petal length (cm) is \emph{high}}  \;\bigl(\mu=-0.79,\;\sigma=0.26\bigr)\\
+                &\quad\land\;\text{petal width  (cm) is \emph{medium}}\;\bigl(\mu=-1.62,\;\sigma=0.54\bigr)\\
+  \textbf{THEN}\;&\mathcal{N}\bigl(\mu=1.36,\;\sigma=1.98\bigr)
+\end{align*}
+Таким образом, предложенный метод демонстрирует значительный выигрыш во времени обучения при сохранении высокой точности при non-singletion входных данных и интерпретируемости через понятийно-зримо оформленные правила.
