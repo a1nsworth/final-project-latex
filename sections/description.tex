@@ -141,7 +141,7 @@
 
 Сенсорные сети с нечёткими алгоритмами принятия решений в режиме реального времени: адаптивное освещение, управление трафиком, предиктивная аналитика энергопотребления.
 
-\subsubsection{Преимущества и ограничения}
+\paragraph{Преимущества и ограничения}
 \label{subsec:pros_cons}
 
 \paragraph{Преимущества}
@@ -159,92 +159,6 @@
   \item \textit{Отсутствие формальной статистической основы}: сложность верификации корректности и оценке вероятностных свойств.
 \end{itemize}
 
-
-\subsubsection{Современные вызовы и направления исследований}
-\label{subsec:challenges}
-
-\paragraph{Автоматизация синтеза базы правил}
-
-
-Методы извлечения знаний из данных:
-\begin{itemize}
-  \item деревья решений и ассоциативные правила;
-  \item эволюционные алгоритмы (ГA, PSO) для оптимизации структуры и параметров \cite{Pedrycz1993};
-  \item глубокие нейронные сети для построения нечетких выводов.
-\end{itemize}
-
-\paragraph{Адаптивные и онлайн-обучаемые системы}
-\begin{itemize}
-  \item гибрид ANFIS с reinforcement learning;
-  \item инкрементные алгоритмы кластеризации для обновления функций принадлежности;
-  \item самоорганизующиеся нечёткие карты (SOM-Fuzzy).
-\end{itemize}
-
-\paragraph{Интерпретируемость vs сложность}
-\begin{itemize}
-  \item алгоритмы rule pruning и rule compression;
-  \item визуализация нечётких правил и зависимостей;
-  \item исследование метрик объяснимости в нечётких системах.
-\end{itemize}
-
-\paragraph{Type-2 и интервальные нечёткие множества}
-\begin{itemize}
-  \item формализация общей Type-2 логики;
-  \item интервальная Type-2 как компромисс между точностью и вычислительной нагрузкой;
-  \item распараллеливание алгоритмов на GPU/FPGA.
-\end{itemize}
-
-\paragraph{Гибридизация с вероятностными и стохастическими методами}
-\begin{itemize}
-  \item байесовско-фаззи сети для совместной обработки разных видов неопределённости;
-  \item фаззи-вероятностные фильтры частиц;
-  \item интеграция в probabilistic programming frameworks.
-\end{itemize}
-
-\paragraph{Масштабируемость и распределённые архитектуры}
-\begin{itemize}
-  \item микро сервисы и edge computing для нечётких контроллеров;
-  \item лёгковесные форматы обмена (MQTT, CoAP) для передачи нечётких оценок;
-  \item алгоритмы консенсуса в сенсорных сетях.
-\end{itemize}
-
-\paragraph{Формальная верификация и стандарты}
-\begin{itemize}
-  \item перевод нечётких систем в конечные автоматы и Petri-сети;
-  \item применение SMT-солверов (Z3, CVC4) для проверки свойств;
-  \item разработка отраслевых стандартов (DO-178C, IEC 61508).
-\end{itemize}
-
-\paragraph{Реализация в реальном времени и аппаратное ускорение}
-\begin{itemize}
-  \item FPGA-акселерация нечётких выводов;
-  \item оптимизация под DSP и микро контроллеры;
-  \item конвейеризация и SIMD-параллелизм для высокоскоростных приложений.
-\end{itemize}
-
-\subsubsection{Современные исследовательские тренды}
-\label{subsec:trends}
-
-\textbf{Type-2 $\to$ Type-3.}\,
-Недавно предложен класс \emph{General Type-3 Fuzzy Sets}
-(Bustince et al., 2023), расширяющий неопределённость
-ещё на уровень ядра MF.
-
-\textbf{Fuzzy Deep Learning.}\,
-Интеграция нечётких слоёв в CNN/Transformer
-для повышения робустности к «adversarial noise»
-и объяснимости
-(Chen et al., 2024).
-
-\textbf{Эволюционная оптимизация.}\,
-Алгоритмы NSGA-III, CMA-ES
-дают парето-фронт «точность – сложность»
-для отсева избыточных правил и MF.
-
-\textbf{Edge AI.}\,
-Лёгкие TSK-модели с quantization-aware training
-компилируются в WebAssembly
-для IIoT-датчиков (Nikita et al., 2025)
 
 \subsubsection{Нечёткие множества и лингвистические переменные}
 Лингвистическая переменная \(X\) определяется кортежем \((X, T(X), U, M)\), где \(T(X)\) --- множество лингвистических термов, \(U\) --- универсум значений, \(M\) --- отображение из \(T(X)\) в функции \(\mu:U\to[0,1]\) \cite{Zadeh1975}. Типичные формы функций принадлежности:
@@ -282,19 +196,7 @@
  Теоретические предпосылки и альтернативные
 парадигмы нечёткой логики \item \(\mathrm{BoundedSum}(a,b)=\min(1,a+b)\).
 \end{itemize}
-Нормы должны удовлетворять свойствам коммутативности, ассоциативности и монотонности \cite{Klir1995}.
-
-\subsubsection{Агрегационные операторы}
-За объединение нескольких аргументов в один вывод отвечают:
-\begin{itemize}
-  \item \textbf{Интеграл Чуэко:}
-    \(\mathrm{Choquet}(f) = \sum_{i=1}^n [f(x_{(i)}) - f(x_{(i-1)})]\,\nu(A_{(i)})\);
-  \item \textbf{Интеграл Сугено:}
-    \(\mathrm{Sugeno}(f) = \max_i \min\bigl(f(x_{(i)}), \nu(A_{(i)})\bigr)\);
-  \item \textbf{OWA-операторы (Ordered Weighted Averaging)}: 
-    \(\mathrm{OWA}(a_1,\dots,a_n) = \sum_{i=1}^n w_i\,a_{(i)}\), \(w_i\ge0\), \(\sum w_i=1\).
-\end{itemize}
-Интегралы и OWA находят применение в многокритериальном анализе, оценке рисков и принятии решений \cite{Dubois2000}.
+Нормы должны удовлетворять свойствам коммутативности, ассоциативности и монотонности.
 
 \subsubsection{Методы дефаззификации}
 Классические методы преобразования нечёткого результата в число:
@@ -658,91 +560,7 @@ Type-2 & MF второго порядка & + робустность; – type-r
 \end{tabular}
 \end{table}
 
-
-%-----------------------------------------------------------------
-\subsection{Нейронные сети}
-\label{subsec:neural_nets}
-
-Нейронная сеть (Neural Network, NN) состоит из последовательности слоёв,
-каждый из которых преобразует входной вектор $\mathbf{a}^{(l-1)}$ в
-выходной $\mathbf{a}^{(l)}$ по правилу
-\begin{equation}
-  \mathbf{z}^{(l)} = W^{(l)}\mathbf{a}^{(l-1)} + \mathbf{b}^{(l)}, 
-  \quad
-  \mathbf{a}^{(l)} = \sigma\bigl(\mathbf{z}^{(l)}\bigr),
-  \label{eq:nn_forward_full}
-\end{equation}
-где $W^{(l)}\in\mathbb{R}^{n_l\times n_{l-1}}$, 
-$\mathbf{b}^{(l)}\in\mathbb{R}^{n_l}$,
-а $\sigma(\cdot)$ — элементная активация (ReLU, sigmoid, tanh).
-
-\paragraph{Ключевые архитектуры}
-\begin{itemize}
-  \item \textbf{MLP (многослойный перцептрон)} — последовательность полносвязных слоёв.
-  \item \textbf{CNN (сверточная сеть)} — сверточные и пулинг–слои для обработки изображений:
-    \[
-      y_{i,j}^{(l)} = \sum_{u=-k}^k\sum_{v=-k}^k
-      K_{u,v}^{(l)}\,x_{i+u,j+v}^{(l-1)} + b^{(l)}.
-      \label{eq:cnn_full}
-    \]
-  \item \textbf{RNN/LSTM} — рекуррентные связи для работы с последовательностями:
-    \begin{equation}
-      h_t = \phi\bigl(W_{xh}x_t + W_{hh}h_{t-1} + b_h\bigr),
-      \quad
-      y_t = W_{hy}h_t + b_y.
-      \label{eq:rnn_full}
-    \end{equation}
-  \item \textbf{Transformer} — self-attention и позиционное кодирование:
-    \[
-      \mathrm{Attention}(Q,K,V) = \mathrm{softmax}\!\bigl(\tfrac{QK^\top}{\sqrt{d_k}}\bigr)\,V.
-      \label{eq:attention_full}
-    \]
-\end{itemize}
-
-\paragraph{Обучение}
-Оптимизация параметров $\theta=\{W^{(l)},\mathbf{b}^{(l)}\}$ происходит
-градентным спуском по функции потерь $\mathcal{L}(\theta)$:
-\begin{equation}
-  \theta \leftarrow \theta - \eta\,\nabla_\theta \mathcal{L}(\theta),
-  \label{eq:gd_full}
-\end{equation}
-где обычно применяют Adam \cite{Kingma2015}:
-\begin{align}
-  m_t &= \beta_1 m_{t-1} + (1-\beta_1)\,\nabla\mathcal{L},\quad
-  v_t = \beta_2 v_{t-1} + (1-\beta_2)\,(\nabla\mathcal{L})^2, \nonumber\\
-  \hat m_t &= m_t/(1-\beta_1^t),\quad
-  \hat v_t = v_t/(1-\beta_2^t),\quad
-  \theta_{t+1} = \theta_t - \eta\,\hat m_t/(\sqrt{\hat v_t}+\epsilon).
-  \label{eq:adam_full}
-\end{align}
-
-\paragraph{Пример кода (PyTorch)}
-\begin{lstlisting}[language=Python, caption={Простейший цикл обучения MLP на PyTorch}, label={lst:nn_training}]
-import torch, torch.nn as nn, torch.optim as optim
-
-class MLP(nn.Module):
-    def __init__(self, dims):
-        super().__init__()
-        layers = []
-        for i in range(len(dims)-1):
-            layers += [nn.Linear(dims[i], dims[i+1]), nn.ReLU()]
-        self.net = nn.Sequential(*layers[:-1])
-    def forward(self, x): return self.net(x)
-
-model = MLP([input_dim, 64, 32, output_dim]).to(device)
-criterion = nn.MSELoss()
-optimizer = optim.Adam(model.parameters(), lr=1e-3)
-
-for epoch in range(epochs):
-    optimizer.zero_grad()
-    preds = model(X_train)
-    loss = criterion(preds, y_train)
-    loss.backward()
-    optimizer.step()
-\end{lstlisting}
-
-%-----------------------------------------------------------------
-\subsubsection{Методы обучения нейросетей и нечётких систем}
+\subsection{Сравнение метод обучения нейросетей и нечётких систем}
 \label{subsec:training_methods}
 
 \paragraph{Нейронные сети.}
