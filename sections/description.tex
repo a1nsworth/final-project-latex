@@ -542,24 +542,6 @@
         \end{equation}
 \end{enumerate}
 
-Табл.~\ref{tab:sys_comp} суммирует различия ключевых архитектур.
-
-\begin{table}[h]
-\centering\small
-\caption{Сравнение систем нечёткого вывода}
-\label{tab:sys_comp}
-\begin{tabular}{@{}p{0.21\linewidth}p{0.57\linewidth}p{0.14\linewidth}@{}}
-\toprule
-\textbf{Тип} & \textbf{Особенности} & \textbf{Плюсы / минусы} \\ \midrule
-Мамдани & Лингв. консеквент; деф.\,по~\eqref{eq:centroid} &
-          + интерпретируемость; – интеграл дорог \\[2pt]
-TSK (Sugeno) & Консеквент $f_k(\mathbf x)$, итог~— \eqref{eq:tprod}–средневес & + быстро; – хуже объяснимость \\[2pt]
-ANFIS & TSK как сеть 5 слоёв & + градиент; – \#параметров $\uparrow$ \\[2pt]
-Type-2 & MF второго порядка & + робустность; – type-reduction O($n^2$) \\
-\bottomrule
-\end{tabular}
-\end{table}
-
 \subsection{Сравнение метод обучения нейросетей и нечётких систем}
 \label{subsec:training_methods}
 
@@ -801,4 +783,4 @@ DevOps и CI/CD     & GitHub Actions, Docker & + автоматизация те
 
 Такой инструментальный стек гарантирует модульность, масштабируемость
 и удобство сопровождения проекта нейронечёткой системы
-с non–singleton входами.
+с non–singleton входами
