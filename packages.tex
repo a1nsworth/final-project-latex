@@ -10,6 +10,7 @@
 % 4) Меняем формат номера: <номер секции>.<номер листинга>
 \renewcommand{\thelisting}{\thesection.\arabic{listing}}
 
+
 \usepackage{xcolor}
 \definecolor{codebg}{RGB}{245,247,250}
 
@@ -76,15 +77,30 @@
 
 %--- Оформление заголовков --------------------------------------
 \usepackage{titlesec}
-\titleclass{\subsubsubsection}{straight}[\subsubsection]
-\newcounter{subsubsubsection}[subsubsection]
-\renewcommand\thesubsubsubsection%
-  {\thesubsubsection.\arabic{subsubsubsection}}
 
-% задаём формат: жирный нормальный размер, отступ 1em после номера
-\titleformat{\subsubsubsection}
+% \titleclass{\subsubsubsection}{straight}[\subsubsection]
+% \newcounter{subsubsubsection}[subsubsection]
+% \renewcommand\thesubsubsubsection%
+%   {\thesubsubsection.\arabic{subsubsubsection}}
+
+\titleformat{\paragraph}[block]
+  {\normalfont\normalsize\bfseries} % ваш стиль
+  {\theparagraph}{1em}{}             % номер + отступ
+\titleformat{\subparagraph}[block]
   {\normalfont\normalsize\bfseries}
-  {\thesubsubsubsection}{1em}{}
+  {\thesubparagraph}{1em}{}
+  
+\titlespacing*{\section}
+{0pt}{5ex}{1.5ex}
+\titlespacing*{\subsection}
+{0pt}{5ex}{1.5ex}
+\titlespacing*{\subsubsection}
+{0pt}{5ex}{1.5ex}
+\titlespacing*{\paragraph}
+{0pt}{1ex}{0.5ex}
+\titlespacing*{\subparagraph}
+{0pt}{1ex}{0.5ex}
+
 %--- Междустрочный интервал -------------------------------------
 \usepackage{setspace}
 \onehalfspacing                      % полуторный интервал
@@ -101,34 +117,6 @@
 \definecolor{type}{RGB}{127,0,85}
 \definecolor{number}{RGB}{128,0,128}
 
-% Стиль для listings
-\lstdefinestyle{bright}{
-  inputencoding=utf8,
-  extendedchars=true,
-  backgroundcolor=\color{codebg},
-  basicstyle=\ttfamily\small,
-  keywordstyle=\color{keyword}\bfseries,
-  commentstyle=\color{comment}\itshape,
-  stringstyle=\color{string},
-  identifierstyle=\color{black},
-  emph={int,float,double,char,void,bool},
-  emphstyle=\color{type}\bfseries,
-  morekeywords=[2]{torch,Tensor,torch.nn,torch.optim,cudaMalloc,cudaMemcpy},
-  keywordstyle=[2]\color{builtin},
-  numberstyle=\tiny\color{number},
-  stepnumber=1,
-  numbersep=6pt,
-  frame=single,
-  rulecolor=\color{gray!50},
-  showspaces=false,
-  showstringspaces=false,
-  breaklines=true,
-  breakatwhitespace=true,
-  tabsize=2,
-  columns=fullflexible,
-  captionpos=b
-}
-\lstset{style=bright}
 
 %--- Гиперссылки -----------------------------------------------
 \usepackage{hyperref}
@@ -147,21 +135,36 @@
 
 \usepackage{natbib}
 
-%--- КОД ---------------------------------------------------------
-\makeatletter
-\let\origparagraph\paragraph
-\renewcommand{\paragraph}[1]{%
-  \origparagraph{#1}\mbox{} 
-  %
-}
-\makeatother
-
+\usepackage{enumitem}
 
 \makeatletter
-\let\origsubparagraph\subparagraph
-\renewcommand{\subparagraph}[1]{%
-  \origsubparagraph{#1}\mbox{} 
-  %
-}
+\AddEnumerateCounter{\asbuk}{\russian@alph}{щ}
 \makeatother
 
+% ------------------------------------------------
+% Универсальные отступы для всех списков, измеряемые в \parindent
+\setlist{%
+  leftmargin=0.8\parindent,                 % отступ всего списка = \parindent
+  labelsep=0.5em,                % расстояние между меткой и текстом = 0.5·\parindent itemsep=0.5em,                           % вертикальный пробел между пунктами
+  parsep=0pt,                            % отступ между абзацами внутри пункта
+  topsep=0.1\parindent,                  % отступ перед первым и после последнего пункта = 0.5·\parindent
+  partopsep=0pt                          % дополнительный отступ при разрыве абзаца перед списком
+}
+
+% ------------------------------------------------
+% теперь — глобально для первого уровня enumerate
+\setlist[enumerate,1]{%
+  label=\asbuk*),     % метка: а), б), в)…
+  ref=\asbuk*),       % чтобы \ref тоже работал
+}
+
+\setlength{\floatsep}{1.5\baselineskip}    % между двумя плавающими объектами
+\setlength{\textfloatsep}{1.5\baselineskip}% между плавающим объектом и текстом
+\setlength{\intextsep}{1.5\baselineskip}   % для плавающих объектов внутри текста
+
+% 2. Одинарный (или иной) интервал внутри caption
+\usepackage{caption}
+\captionsetup{
+  font={stretch=1.5},  % small + ровно одинарный межстрочный (stretch=1)
+  skip=0.5\baselineskip    % небольшой вертикальный отступ «caption–текст»
+}
