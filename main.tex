@@ -21,45 +21,40 @@
 \input{packages.tex}
 \input{preamble.tex}
 
+% \makeatletter
+%   \let\origsection\section
+%
+%   % Переопределяем \section так, чтобы оно разделяло *- и без*- варианты
+%   \def\section{%
+%     \@ifstar
+%       {\secstar}%  вызов при \section*{…}
+%       {\secnostar}% вызов при \section{…}
+%   }
+%
+%   % Обычная (нумерованная) секция
+%   \def\secnostar#1{%
+%     \origsection{#1}%
+%     \ESKDsignature{\normalfont\small #1}%
+%     \eskdrerun
+%   }
+%
+%   % Звёздная (ненумерованная) секция
+%   \def\secstar#1{%
+%     \origsection*{#1}%
+%     \ESKDsignature{\normalfont\small #1}%
+%     \eskdrerun
+%   }
+% \makeatother
+
+
 \begin{document}
 \counterwithin{lstlisting}{section}
 \include{titlepage}
 \tableofcontents
- 
-% \let\oldsection\section
-% \renewcommand{\section}[1]{\oldsection{#1}\ESKDsignature{\normalfont\small #1}\eskdrerun}
-
-
-\makeatletter
-  \let\origsection\section
-
-  % Переопределяем \section так, чтобы оно разделяло *- и без*- варианты
-  \def\section{%
-    \@ifstar
-      {\secstar}%  вызов при \section*{…}
-      {\secnostar}% вызов при \section{…}
-  }
-
-  % Обычная (нумерованная) секция
-  \def\secnostar#1{%
-    \origsection{#1}%
-    \ESKDsignature{\normalfont\small #1}%
-    \eskdrerun
-  }
-
-  % Звёздная (ненумерованная) секция
-  \def\secstar#1{%
-    \origsection*{#1}%
-    \ESKDsignature{\normalfont\small #1}%
-    \eskdrerun
-  }
-\makeatother
-
-% \let\oldsection\section*
-% \renewcommand{\section*}[1]{\oldsectionstar{#1}\ESKDsignature{\normalfont\small #1}\eskdrerun}
 
 \include{sections/introduction}
 \include{sections/description}
 \include{sections/design}
 \include{sections/implementation}
+\include{sections/apendix}
 \end{document}

@@ -6,6 +6,7 @@
 % 1) Загружаем minted как float-пакет
 \usepackage[float]{minted}
 
+\usepackage[square,numbers,sort&compress]{natbib}
 
 % 4) Меняем формат номера: <номер секции>.<номер листинга>
 \renewcommand{\thelisting}{\thesection.\arabic{listing}}
@@ -74,6 +75,7 @@
 \usepackage{chngcntr}
 \counterwithin{figure}{section}       % нумерация рисунков по секциям
 \counterwithin{table}{section}        % нумерация таблиц по секциям
+\counterwithin{equation}{section}
 
 %--- Оформление заголовков --------------------------------------
 \usepackage{titlesec}
@@ -168,3 +170,6 @@
   font={stretch=1.5},  % small + ровно одинарный межстрочный (stretch=1)
   skip=0.5\baselineskip    % небольшой вертикальный отступ «caption–текст»
 }
+
+
+\captionsetup[listing]{name=Листинг}
