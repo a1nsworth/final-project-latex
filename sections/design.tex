@@ -1,3 +1,4 @@
+\ESKDthisStyle{formII}
 \section{ПРОЕКТИРОВАНИЕ ПРОГРАММНОГО ОБЕСПЕЧЕНИЯ}
 \ESKDsignature{\normalsize Проектирование программного обеспечения}
 \eskdrerun{}
@@ -389,7 +390,6 @@ Type-2-расширения) она остаётся актуальным
              {\displaystyle \int \tilde{\mu}_B(y)\,dy}.
     \]
 \end{enumerate}
-\newpage
 Для обучения нейро-нечетких систем используются методы настройки
 весов \(w_{ij}\) и параметров функций принадлежности:
 \begin{itemize}
@@ -694,7 +694,7 @@ M[\text{«абсолютно ложно»}"](t)&=
     \addplot {(1-x)^2}; \addlegendentry{очень ложно}
   \end{axis}
 \end{tikzpicture}
-\caption{Функции принадлежности лингвистических термов истинности.}
+\caption{Функции принадлежности лингвистических термов истинности. Авторский материал}
 \end{figure}
 \paragraph{Лингвистическая интерпретация}  
 \begin{itemize}
@@ -755,15 +755,15 @@ GPU, изначально заточенные под рендеринг, бла
   \item \textbf{Стримы и графы задач} — механизм группировки операций для минимизации накладных расходов вызова ядра;
   \item \textbf{Kernel Fusion} — объединение последовательных операций в единый кернел, позволяющее сократить число обращений к глобальной памяти.  
 \end{itemize}  
-
-На практике обучение крупных нейросетей нередко разбивают на две части:  
 \begin{enumerate}  
+  \item[] На практике обучение крупных нейросетей нередко разбивают на две части:  
   \item Предобработка, аугментация и загрузка данных (I/O, трансформации) выполняются на CPU, где быстрее работают ветвления и системные вызовы;
   \item Основной проход (forward/backward) и обновление параметров — на GPU, где тысячи ядер решают одинаковые подзадачи над матрицами и тензорами.  
 \end{enumerate}  
 
 Визуализация профилей реальных задач показывает, что современные ускорители типа NVIDIA A100 обеспечивают до 1–1.5 PFLOPS в смешанной точности при потреблении порядка 300 Вт, тогда как эквивалентная нагрузка на серверный CPU (Intel Xeon) даст лишь пару сотен GFLOPS при схожем энергопотреблении. Это объясняет, почему GPU остаются ключевым ресурсом для дата-центров машинного обучения.  
 
+\medskip
 Конечно, у GPU есть и ограничения:  
 \begin{itemize}  
   \item \textbf{Ограниченный объём VRAM}. Модели типа GPT-3 XXL могут не помещаться на одной карте, требуя шардирования по нескольким GPU;
@@ -860,6 +860,7 @@ def f(x):
 res = f(jnp.ones((1024, 1024)))
 g = grad(lambda m: jnp.sum(m**2))(jnp.ones((3,)))
 \end{minted} 
+\end{center}
 
 \textbf{MXNet} (Gluon API):
 \begin{center}
@@ -872,6 +873,7 @@ w = nd.random.normal(shape=(1024,1024), ctx=gpu())
 y = nd.dot(x, w)
 \end{minted} 
 \end{center}
+
 
 PyTorch выделяется динамическим графом и удобством отладки, TensorFlow — оптимизацией статических моделей, JAX — простотой JIT и векторизации, MXNet — гибкостью Gluon API.
 
@@ -926,14 +928,15 @@ PyTorch выделяется динамическим графом и удобс
 \begin{itemize}
   \item \emph{PCA} (метод главных компонент): решается собственная задача для ковариационной матрицы и берутся \(k\) ведущих компонент:
     \[
-      X' = XW,\quad W = [v_1,\dots,v_k],\quad \Sigma v_i = \lambda_i v_i.
+      X' = XW,\quad W = [v_1,\dots,v_k],\quad \Sigma v_i = \lambda_i v_i;
     \]
-  \item \emph{LDA} (линейный дискриминантный анализ): максимизация отношения межклассовой и внутриклассовой дисперсии.
+  \item \emph{LDA} (линейный дискриминантный анализ): максимизация отношения межклассовой и внутриклассовой дисперсии;
   \item Нелинейные методы \emph{t-SNE}, \emph{UMAP} — для визуализации в 2–3D.
 \end{itemize}
 
 \paragraph{Пример на Python}
-\begin{lstlisting}[language=Python]
+\begin{center}
+\begin{minted}{python}
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 from sklearn.decomposition import PCA
 
@@ -945,13 +948,13 @@ X_std = std.fit_transform(X)
 
 pca = PCA(n_components=2, random_state=42)
 X_pca = pca.fit_transform(X_std)
-\end{lstlisting}
+\end{minted}
+\end{center}
 
 % ----------------------------------------
 \subsubsection{Синтетическое дополнение редких классов}
 \label{sec:oversampling}
 
-\paragraph{Почему важно дополнять редкие классы?}  
 В случае сильного дисбаланса модель может «игнорировать» малочисленные классы, отказываться им уделять внимание и выдавать предсказания лишь для большинства. Синтетическое дополнение (oversampling) помогает сгладить этот эффект, повысить чувствительность к редким событиям и улучшить общую сбалансированность.
 
 \paragraph{Методы синтеза}
@@ -959,87 +962,63 @@ X_pca = pca.fit_transform(X_std)
   \item \textbf{SMOTE} (Synthetic Minority Over-sampling Technique):  
     Для каждой точки \(x_i\) класса-минорити выбирается один из \(k\) ближайших соседей \(x_{\rm nn}\) и синтезируется:
     \[
-      x_{\rm new} = x_i + \delta\,(x_{\rm nn} - x_i),\quad \delta\in[0,1].
+      x_{\rm new} = x_i + \delta\,(x_{\rm nn} - x_i),\quad \delta\in[0,1];
     \]
   \item \textbf{Borderline-SMOTE}:  
-    Генерация новых примеров только в «пограничных» зонах, где редкий класс пересекается с мажорити.
+    Генерация новых примеров только в «пограничных» зонах, где редкий класс пересекается с мажорити;
   \item \textbf{ADASYN}:  
-    Учитывает плотность объектов, создаёт больше синтетических точек там, где редкий класс особенно редок.
+    Учитывает плотность объектов, создаёт больше синтетических точек там, где редкий класс особенно редок;
   \item \textbf{GAN-базированные методы}:  
     Обучают генератор/дискриминатор для создания правдоподобных новых образцов.
 \end{enumerate}
 
-\paragraph{Плюсы и минусы}
 \begin{itemize}
-  \item \emph{Плюсы:}  
+  \item \emph{Преимущества:}  
     \begin{itemize}
-      \item Сглаживает дисбаланс без потери информации.  
+      \item Сглаживает дисбаланс без потери информации;
       \item Увеличивает объём обучающей выборки, что может улучшить регуляризацию.
     \end{itemize}
-  \item \emph{Минусы:}  
+  \item \emph{Недостатки:}  
     \begin{itemize}
-      \item Риск переобучения на синтетических данных.  
+      \item Риск переобучения на синтетических данных; 
       \item При сложном многомерном распределении могут появиться «ненатуральные» точки.
     \end{itemize}
 \end{itemize}
 
-\paragraph{Пример на Python}
-\begin{lstlisting}[language=Python]
+\begin{center}
+\begin{minted}{python}
 from imblearn.over_sampling import SMOTE
 
 smote = SMOTE(sampling_strategy='minority', k_neighbors=5, random_state=42)
 X_res, y_res = smote.fit_resample(X, y)
-\end{lstlisting}
+\end{minted}
+\end{center}
 
-% ----------------------------------------
-\subsubsection{Обнаружение и устранение выбросов}
-\label{sec:outliers}
+\paragraph{Обнаружение и устранение выбросов}
 
-\paragraph{Зачем искать выбросы?}  
 Выбросы могут искажать оценки параметров (среднее, дисперсию), влиять на обучение моделей и ухудшать обобщающую способность. При этом не все «экстремальные» значения — ошибки: порой это важные редкие события.
 
-\paragraph{Методы обнаружения}
+\bigskip
+Методы обнаружения:
 \begin{itemize}
   \item \textbf{Статистические критерии:}
     \begin{itemize}
       \item Z-score: 
-        $|z_i| > \tau$, где обычно $\tau\approx3$.
+        $|z_i| > \tau$, где обычно $\tau\approx3$;
       \item IQR-критерий: 
         $x < Q_1 - 1.5\,\mathrm{IQR}$ или $x > Q_3 + 1.5\,\mathrm{IQR}$.
     \end{itemize}
 
   \item \textbf{Алгоритмические методы:}
     \begin{itemize}
-      \item Isolation Forest: строит деревья, в которых «аномалии» изолируются быстрее.
-      \item Local Outlier Factor: сравнивает плотность вокруг точки с плотностью у соседей.
+      \item Isolation Forest: строит деревья, в которых «аномалии» изолируются быстрее;
+      \item Local Outlier Factor: сравнивает плотность вокруг точки с плотностью у соседей;
       \item One-Class SVM: обучается только на «нормальных» данных и выявляет выбросы.
     \end{itemize}
 \end{itemize}
 
-\paragraph{Стратегии устранения}
-\begin{itemize}
-  \item \emph{Удаление:} простое отбрасывание аномальных строк.
-  \item \emph{Замена:} подстановка медианы, моды или крайних значений.
-  \item \emph{Капирование (capping):} обрезание выходящих за пределы значений до выбранных порогов.
-\end{itemize}
-
-\begin{table}[h]
-\centering
-\caption{Плюсы и минусы}
-\label{tab:pros_cons}
-\begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X@{}}
-\toprule
-\textbf{Плюсы} & \textbf{Минусы} \\
-\midrule
-Повышает надёжность статистических оценок. & Можно случайно удалить важные редкие события. \\
-\addlinespace[0.5em]
-Облегчает обучение моделей, снижает риск переобучения на шуме. & Сложно задать универсальные пороги для разных признаков. \\
-\bottomrule
-\end{tabularx}
-\end{table}
-
-\paragraph{Пример на Python}
-\begin{lstlisting}[language=Python]
+\begin{center}
+\begin{minted}{python}
 import numpy as np
 from sklearn.ensemble import IsolationForest
 
@@ -1050,16 +1029,9 @@ X_clean_z = X[mask]
 iso = IsolationForest(contamination=0.05, random_state=0)
 labels = iso.fit_predict(X)
 X_clean_if = X[labels == 1]
-\end{lstlisting}
+\end{minted}
+\end{center}
 
-% ----------------------------------------
-% Конец раздела
-% ----------------------------------------
-% \subsection{Методы предварительной обработки и улучшения данных}
-% \subsubsection{Масштабировани}
-% \subsubsection{Синтетическое дополнение редких классов (SMOTE)}
-% \subsubsection{Обнаружение и устранение выбросов}
-%
 \subsection{Инструменты и методы оптимизации гиперпараметров}
 \label{sec:hyperparameter-optimization}
 
@@ -1075,8 +1047,8 @@ X_clean_if = X[labels == 1]
 |\mathcal{P}| \;=\; \prod_{i=1}^k n_i.
 \label{eq:grid-search-size}
 \end{equation}
-\textbf{Плюсы:} простота реализации, гарантированное покрытие решётки.  
-\textbf{Минусы:} экспоненциальный рост числа испытаний при увеличении \(k\) и \(n_i\).
+\textbf{Премущества:} простота реализации, гарантированное покрытие решётки.  \\
+\textbf{Недостатки:} экспоненциальный рост числа испытаний при увеличении \(k\) и \(n_i\).
 
 \paragraph{Случайный поиск (Random Search)}  
 При ограниченном бюджете \(N\) испытаний точки выбираются в гиперпространстве равномерно:
@@ -1085,7 +1057,7 @@ p_i^{(j)} \;\sim\; \mathcal{U}(a_i, b_i),
 \quad j = 1,\dots,N.
 \label{eq:random-search}
 \end{equation}
-\citet{bergstra2012random} показали, что при фиксированном \(N\) Random Search часто эффективнее Grid Search, так как распределяет усилия по более важным измерениям.
+\cite{bergstra2012random} показали, что при фиксированном \(N\) Random Search часто эффективнее Grid Search, так как распределяет усилия по более важным измерениям.
 
 \subsubsection{Байесовская оптимизация}
 
@@ -1130,20 +1102,20 @@ f(x)\sim\mathcal{GP}\bigl(m(x),\,k(x,x')\bigr),
 \paragraph{Hyperband / ASHA}  
 Комбинирует Successive Halving с несколькими начальными бюджетами \(r_1, r_2, \dots, r_s\), что позволяет балансировать между шириной и глубиной поиска.
 
-\subsubsection{Современные фреймворки}
+\paragraph{Современные фреймворки}
 
 \begin{itemize}
-  \item \textbf{Optuna}. Основан на TPE (Tree-structured Parzen Estimator).
-  \item \textbf{Hyperopt}. Реализует TPE и Random Search, конфигурируется через Python-словари.
+  \item \textbf{Optuna}. Основан на TPE (Tree-structured Parzen Estimator);
+  \item \textbf{Hyperopt}. Реализует TPE и Random Search, конфигурируется через Python-словари;
   \item \textbf{Scikit-Optimize (skopt)}. Предоставляет \texttt{gp\_minimize},  \\
-    \texttt{forest\_minimize}, \texttt{gbrt\_minimize}.
-  \item \textbf{Ray Tune}. Распределённая оптимизация с поддержкой HyperOpt, BayesOpt, HyperBand.
+    \texttt{forest\_minimize}, \texttt{gbrt\_minimize};
+  \item \textbf{Ray Tune}. Распределённая оптимизация с поддержкой HyperOpt, BayesOpt, HyperBand;
   \item \textbf{SMAC}. Bayesian Optimization на основе Random Forest.
 \end{itemize}
 
-\subsubsection{Пример использования Optuna}
-
-\begin{lstlisting}[language=Python]
+\begin{center}
+\captionof{listing}{Пример использования Optuna}
+\begin{minted}{python}
 import optuna
 
 def objective(trial):
@@ -1154,4 +1126,5 @@ def objective(trial):
 
 study = optuna.create_study(direction='minimize')
 study.optimize(objective, n_trials=50)
-\end{lstlisting}
+\end{minted}
+\end{center}

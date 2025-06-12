@@ -1,3 +1,4 @@
+\ESKDthisStyle{formII}
 \section{ПРОГРАММНАЯ РЕАЛИЗАЦИЯ}
 \ESKDsignature{\normalsize Программная реализация}
 \eskdrerun{}
@@ -20,17 +21,17 @@
 \begin{enumerate}
   \item \textbf{Первичный анализ}  
     \begin{itemize}
-      \item Проверка отсутствующих значений и аномалий.
-      \item Вычисление базовых статистик (среднее, стандартное отклонение, квартили).
+      \item Проверка отсутствующих значений и аномалий;
+      \item Вычисление базовых статистик (среднее, стандартное отклонение, квартили);
       \item Визуализация распределений (гистограммы) и парных зависимостей (scatter–matrix).
     \end{itemize}
   \item \textbf{Выявление и удаление выбросов}  
-    С помощью межквартильного метода и визуальных средств (ящика с усами) отмечаются экстремальные значения, которые могут искажать обучение.
+    С помощью межквартильного метода и визуальных средств (ящика с усами) отмечаются экстремальные значения, которые могут искажать обучение;
   \item \textbf{Нормализация и масштабирование}  
     Для равномерного вклада всех признаков используется стандартизация (z-score) или min–max нормализация:
     \[
       x' = \frac{x - \mu}{\sigma},\quad
-      x'' = \frac{x - x_{\min}}{x_{\max}-x_{\min}}.
+      x'' = \frac{x - x_{\min}}{x_{\max}-x_{\min}};
     \]
   \item \textbf{Разбиение на обучающую и тестовую выборки}  
     Обычно данные делятся в соотношении 70\%–30\% или 80\%–20\%, с последующим стратифицированным отбором образцов, чтобы сохранить пропорции классов.
@@ -41,7 +42,6 @@
 
 Прежде чем приступать к построению нечеткой сети, необходимо тщательно изучить и подготовить исходный датасет. В качестве демонстрационного примера мы используем классический набор \emph{Iris} (150 образцов, 4 числовых признака, 3 класса).
 
-\subsubsection{Статистическое описание}
 \begin{table}[H]
   \centering
   \caption{Базовые статистические характеристики признаков Iris Dataset.}
@@ -58,8 +58,6 @@
   \label{tab:iris_stats}
 \end{table}
 
-\subsubsection{Распределение признаков}
-
 На рис.~\ref{fig:iris_histos} представлены гистограммы всех четырёх признаков, построенные с цветовой палитрой.
 \begin{figure}[H]
   \centering
@@ -73,19 +71,19 @@
   \centering
   \includegraphics[width=0.8\textwidth]{images/histo_petal_length_cm_cb2.png}\\[6pt]
   \includegraphics[width=0.8\textwidth]{images/histo_petal_width_cm_cb2.png}
+  \caption{Гистограммы распределений признаков Iris Dataset.}
   % не вызываем \caption — подпись продолжится от предыдущего блока
 \end{figure}
 
-\paragraph{Выводы.}
+\noindent{\textbf{Выводы:}}
 \begin{itemize}
-  \item \textbf{sepal length} демонстрирует почти нормальное распределение с лёгкой дву­пиковостью (Setosa vs.~остальные виды).
-  \item \textbf{sepal width} скошено вправо, большинство значений в [2.5, 3.5] см.
+  \item \textbf{sepal length} демонстрирует почти нормальное распределение с лёгкой дву­пиковостью (Setosa vs.~остальные виды);
+  \item \textbf{sepal width} скошено вправо, большинство значений в [2.5, 3.5] см;
   \item \textbf{petal length} и \textbf{petal width} отчётливо мультимодальны: Setosa образует узкий «низ» (1–2 см), Versicolor и Virginica смещены вправо.
 \end{itemize}
 
-\subsubsection{Boxplot–анализ по видам}
-
-Распределения по классам показаны на рис.~\ref{fig:iris_boxplots_vertical}.
+\paragraph{Boxplot–анализ по видам}
+Распределения по классам показаны на рис.\ref{fig:iris_boxplots_vertical}.
 \begin{figure}[H]
   \centering
   \includegraphics[width=0.8\textwidth]{images/box_sepal_length_cm_cb2.png}\\[6pt]
@@ -101,46 +99,45 @@
   \includegraphics[width=0.8\textwidth]{images/box_petal_width_cm_cb2.png}
   \caption{Boxplot–диаграммы признаков по видам Iris Dataset.}
 \end{figure}
-
-\paragraph{Выводы.}
+\noindent{\textbf{Выводы:}}
 \begin{itemize}
-  \item Для \emph{petal length/width} квартильные интервалы видов не перекрываются → признаки почти идеальны для классификации.
+  \item Для \emph{petal length/width} квартильные интервалы видов не перекрываются → признаки почти идеальны для классификации;
   \item Для \emph{sepal length/width} наблюдаются пересечения квартилей Versicolor и Virginica, поэтому они менее информативны в отрыве от лепестковых.
 \end{itemize}
 
-\subsubsection{Парная визуализация (Scatter–matrix)}
+\paragraph{Парная визуализация (Scatter–matrix)}
 
 На рис.~\ref{fig:scatter_matrix} приведена матрица рассеяния всех пар признаков.
 
-\begin{figure}[ht]
+\begin{figure}[H]
   \centering
   \includegraphics[width=\textwidth]{images/scatter_matrix_cb2.png}
   \caption{Scatter–matrix для признаков Iris.}
   \label{fig:scatter_matrix}
 \end{figure}
 
-\paragraph{Выводы.}
+\noindent{\textbf{Выводы:}}
 \begin{itemize}
-  \item Самая сильная корреляция между \emph{petal length} и \emph{petal width}.
-  \item Комбинации (\emph{sepal length}, \emph{petal length}) и (\emph{petal length}, \emph{petal width}) дают линейно разделимые классы.
+  \item Самая сильная корреляция между \emph{petal length} и \emph{petal width};
+  \item Комбинации (\emph{sepal length}, \emph{petal length}) и (\emph{petal length}, \emph{petal width}) дают линейно разделимые классы;
   \item Пара (\emph{sepal width}, \emph{sepal length}) менее информативна.
 \end{itemize}
 
-\subsubsection{Кластеризация K–Means}
+\paragraph{Кластеризация K–Means}
 
-Наконец, на рис.~\ref{fig:kmeans_cb2} представлена K–Means кластеризация ($k=3$) по паре (\emph{sepal length}, \emph{petal length}), использующая ту же палитру ColorBrewer\_2.
+На рис.~\ref{fig:kmeans_cb2} представлена K–Means кластеризация ($k=3$) по паре (\emph{sepal length}, \emph{petal length}).
 
-\begin{figure}[ht]
+\begin{figure}[H]
   \centering
   \includegraphics[width=0.8\textwidth]{images/cluster_plot_cb2.png}
   \caption{Кластеризация K–Means: Sepal Length vs Petal Length. Кластеры подписаны с указанием доминирующего вида; центроиды отмечены крупными крестами.}
   \label{fig:kmeans_cb2}
 \end{figure}
 
-\paragraph{Выводы.}
+\noindent{\textbf{Выводы:}}
 \begin{itemize}
-  \item \textbf{Cluster 1 (setosa)}: полностью отделён в нижнем левом углу, петаловые признаки минимальны — 100\% точность.
-  \item \textbf{Cluster 0 (versicolor)}: средняя область, 48 из 50 экземпляров Versicolor точно отделены (96\%); 14 Virginica попали в этот кластер из–за близости.
+  \item \textbf{Cluster 1 (setosa)}: полностью отделён в нижнем левом углу, петаловые признаки минимальны — 100\% точность;
+  \item \textbf{Cluster 0 (versicolor)}: средняя область, 48 из 50 экземпляров Versicolor точно отделены (96\%); 14 Virginica попали в этот кластер из–за близости;
   \item \textbf{Cluster 2 (virginica)}: правый верхний угол, 36 из 50 Virginica (72\%), несколько Versicolor «зашли» внутрь.
   \item Итог: лепестковые признаки дают главную разделительную информацию, чашелистики лишь уточняют границы.
 \end{itemize}
@@ -234,7 +231,7 @@ for j in 1..d:
     \[
       X''_{ij} = a + (b - a)\,\frac{X_{ij} - x_j^{\min}}{x_j^{\max} - x_j^{\min}}.
     \]
-  \item \emph{Усечённая нормализация:} после вычисления \(X'_{ij}\) удаляем/отбрасываем точки с \(X'_{ij}\notin[0,1]\), если в данных появились новые выбросы.
+  \item \emph{Усечённая нормализация:} после вычисления \(X'_{ij}\) удаляем/отбрасываем точки с \(X'_{ij}\notin[0,1]\), если в данных появились новые выбросы;
   \item \emph{Adaptive Min–Max:} вычисление \(x_j^{\min}\), \(x_j^{\max}\) по доверительному интервалу, например, \(\bigl[Q_1 - 1.5\,\mathrm{IQR},\,Q_3 + 1.5\,\mathrm{IQR}\bigr]\) вместо фактических экстремумов.
 \end{itemize}
 
@@ -264,11 +261,10 @@ for j in 1..d:
   X'_{i} = \frac{X_i}{\|X_i\|_p},
   \quad \|X_i\|_p = \Bigl(\sum_{j}|X_{ij}|^p\Bigr)^{1/p}.
 \]
-Часто используют \(p=2\) (Euclidean norm). Полезно при работе с косинусным сходством.
 
-\subsubsection{Пример кода: добавление шума и Min–Max нормализация}
-\label{sec:noise_scaling_example}
-\begin{listing}[ht]
+\newpage
+\begin{center}
+\captionof{listing}{Добавление шума и Min–Max нормализация}
 \begin{minted}{python}
 for i in range(10):
   map(lambda i**2, i)
@@ -284,20 +280,20 @@ if NOISE_IN:
 # 3. Min–Max нормализация каждого признака в [0, 1]
 X = MinMaxScaler().fit_transform(X).astype(np.float32)
 \end{minted}
-\caption{Min Max scalling}
-\end{listing}
+\end{center}
+
 \paragraph{Пояснения к коду:}
 \begin{itemize}
   \item \textbf{Загрузка и приведение типов:}  
     \verb|load_iris()| возвращает массив \verb|iris.data| размерности $(150\times4)$ и вектор меток \verb|iris.target| длины 150.  
-    Приведение к \verb|float32| и \verb|int64| нужно для эффективности вычислений (особенно на GPU).
+    Приведение к \verb|float32| и \verb|int64| нужно для эффективности вычислений (особенно на GPU);
   
   \item \textbf{Добавление шума:}
     \[
       X \leftarrow X + \varepsilon,\quad \varepsilon \sim \mathcal{N}(0,\,\sigma^2),\;
       \sigma=\texttt{NOISE\_IN}.
     \]
-    Семя \verb|42| обеспечивает детерминированность. Такой шаг смягчает влияние редких выбросов и проверяет устойчивость модели к флуктуациям.
+    Семя \verb|42| обеспечивает детерминированность. Такой шаг смягчает влияние редких выбросов и проверяет устойчивость модели к флуктуациям;
   
   \item \textbf{Min–Max нормализация:}  
     Для каждого признака $j$ вычисляются экстремумы
@@ -310,7 +306,7 @@ X = MinMaxScaler().fit_transform(X).astype(np.float32)
       X'_{ij} = \frac{X_{ij} - x_j^{\min}}{x_j^{\max} - x_j^{\min}},\quad
       X'_{ij}\in[0,1].
     \]
-    Это обеспечивает единый масштаб всех признаков, снижая диспропорцию и избегая «доминирования» параметров с большим диапазоном.
+    Это обеспечивает единый масштаб всех признаков, снижая диспропорцию и избегая «доминирования» параметров с большим диапазоном;
   
   \item \textbf{Дальнейшая обработка:}  
     После нормализации массив $X$ готов к обучению нечеткой сети. Метки $y$ не меняются и используются для расчёта метрик качества.
@@ -380,29 +376,28 @@ def opportunity(a1, a2, b1, b2):
 На выходе получаем вектор длины \textbf{batch} агрегирующий \\ фаззи-принадлежности.
 \end{definition}
 
-\subsubsection{Преимущества параллелизации}
+\paragraph{Преимущества параллелизации}
 
 \begin{itemize}
-  \item \textbf{Векторизация.} Все базовые операции ($\exp, \log, \sqrt{}$), сравнения, минимум/максимум) выполняются над целыми тензорами разом, без Python-циклов по элементам.
-  \item \textbf{Broadcasting.} Размерности автоматически выравниваются, что упрощает работу с массивами разных форм.
+  \item \textbf{Векторизация.} Все базовые операции ($\exp, \log, \sqrt{}$), сравнения, минимум/максимум) выполняются над целыми тензорами разом, без Python-циклов по элементам;
+  \item \textbf{Broadcasting.} Размерности автоматически выравниваются, что упрощает работу с массивами разных форм;
   \item \textbf{CUDA-ядра.} При наличии GPU вычисления исполняются в оптимизированных CUDA-ядрах, что даёт существенное ускорение.
 \end{itemize}
 
-\subsubsection{Итоговая схема вычислений}
-
+\paragraph{Итоговая схема вычислений}
 \begin{enumerate}
-  \item Инициализация: выбор \(\texttt{device}\) и создание констант на GPU.
-  \item Вычисление \(\mu_{CP}\) для каждого класса и признака через \verb|mu_cp|.
-  \item Агрегация по порогам \(\tau\) через \verb|opportunity|.
+  \item Инициализация: выбор \(\texttt{device}\) и создание констант на GPU;
+  \item Вычисление \(\mu_{CP}\) для каждого класса и признака через \verb|mu_cp|;
+  \item Агрегация по порогам \(\tau\) через \verb|opportunity|;
   \item Дефаззификация с использованием \(\mathrm{YGRID}\) и выходных Гауссовых МФ для получения финальных предсказаний.
 \end{enumerate}
 
 Таким образом, код автоматически распараллеливает все тяжелые операции на GPU, обеспечивая высокую производительность при обучении и предсказании.
 
 
-\subsection{Функция \texttt{predict}}
-
-\begin{minted}[fontsize=\small]{python}
+\paragraph{Функция predict}
+\begin{center}
+\begin{minted}{python}
 def predict(vec, xb, noise, defuzz):
     # 1. Преобразование вектора параметров
     v = torch.tensor(vec, dtype=torch.float32, device=device)
@@ -451,14 +446,15 @@ def predict(vec, xb, noise, defuzz):
     # 6. Округление, ограничение и перевод в numpy
     return torch.round(y).clamp(0, n_classes - 1).cpu().numpy().astype(int)
 \end{minted}
+\end{center}
 
 \paragraph{Этап 1: Преобразование вектора параметров}
 \begin{itemize}
-  \item \texttt{vec}: одномерный массив параметров (правил и выходных МФ).
-  \item Вычисление \texttt{fcnt = n\_classes * n\_features * 3}: количество параметров для входных Гауссовых (средние, sigma, индекс терма).
-  \item \texttt{fp}: тензор формы \([n\_classes, n\_features, 3]\) — параметры входных МФ.
-  \item \texttt{tp}: оставшиеся параметры формируют пары \((center, sigma)\) для выходных МФ.
-  \item \texttt{means, sigmas, terms}: средние, ширины (зажимаем минимумом 1e-3 для стабильности), индексы термов для агрегации.
+  \item \texttt{vec}: одномерный массив параметров (правил и выходных МФ);
+  \item Вычисление \texttt{fcnt = n\_classes * n\_features * 3}: количество параметров для входных Гауссовых (средние, sigma, индекс терма);
+  \item \texttt{fp}: тензор формы \([n\_classes, n\_features, 3]\) — параметры входных МФ;
+  \item \texttt{tp}: оставшиеся параметры формируют пары \((center, sigma)\) для выходных МФ;
+  \item \texttt{means, sigmas, terms}: средние, ширины (зажимаем минимумом 1e-3 для стабильности), индексы термов для агрегации;
   \item \texttt{centers, sigs}: параметры выходных функций принадлежности.
 \end{itemize}
 
@@ -469,7 +465,7 @@ def predict(vec, xb, noise, defuzz):
     \begin{split}
       \texttt{fires}
       &= \texttt{torch.zeros([B,N\_TERMS],device=device)}, \\
-      \text{где }B &= \texttt{xb.size(0)}.
+      \text{где }B &= \texttt{xb.size(0)};
     \end{split}
   \]
   \item {\bf Основной цикл по классам и признакам:}
@@ -480,13 +476,13 @@ def predict(vec, xb, noise, defuzz):
     \begin{enumerate}
       \item {\bf Выбор параметра:}
         \[
-          \mu_{\text{in}} = \texttt{means}[c,f]\in\mathbb{R}.
+          \mu_{\text{in}} = \texttt{means}[c,f]\in\mathbb{R};
         \]
       \item {\bf Расширение на батч:}
         \[
           \mu_{\text{in}}
           \xrightarrow{\texttt{.expand}(B)}
-          [\underbrace{B}_{\text{batch}}].
+          [\underbrace{B}_{\text{batch}}];
         \]
       \item {\bf Вычисление степени соответствия:}
         \[
@@ -497,7 +493,7 @@ def predict(vec, xb, noise, defuzz):
               \sigma_{c,f},
               \texttt{noise}
             ),
-          \quad \omega\in\mathbb{R}^B.
+          \quad \omega\in\mathbb{R}^B;
         \]
       \item {\bf Обновление буфера:}
         \[
@@ -516,7 +512,7 @@ def predict(vec, xb, noise, defuzz):
   \item {\bf Параметры выходных МФ:}  
     $$
       \texttt{centers}\in\mathbb{R}^{N\_{TERMS}},\quad
-      \texttt{sigs}\in\mathbb{R}^{N\_{TERMS}}.
+      \texttt{sigs}\in\mathbb{R}^{N\_{TERMS}};
     $$
   \item {\bf Построение матрицы} $\mu_{\text{out}}\in\mathbb{R}^{N\_{TERMS}\times G}$  
     (где $G = |\texttt{YGRID}|$):  
@@ -525,12 +521,12 @@ def predict(vec, xb, noise, defuzz):
       = \exp\Bigl(
           -\frac{(\texttt{YGRID}_j - \texttt{centers}_i)^2}
                 {2\,\texttt{sigs}_i^2}
-        \Bigr).
+        \Bigr);
     $$
   \item {\bf Векторизация:}  
     \texttt{centers[:,None]}~$\to$~$[N\_{TERMS},1]$,  
     вычитание \texttt{YGRID} через broadcasting~$\to$~$[N\_{TERMS},G]$,  
-    и $\exp$ — всё в одном запуске CUDA.
+    и $\exp$ — всё в одном запуске CUDA;
   \item {\bf Кэширование:}  
     при неизменных параметрах выходные МФ можно вычислить один раз и переиспользовать.
 \end{itemize}
@@ -543,21 +539,21 @@ def predict(vec, xb, noise, defuzz):
       F &= \texttt{fires.unsqueeze(-1)}
             \;\in\;\mathbb{R}^{B\times N_{\text{TERMS}}\times 1},\\
       M &= \mu_{\text{out}}.\texttt{unsqueeze(0)}
-            \;\in\;\mathbb{R}^{1\times N_{\text{TERMS}}\times G}.
+            \;\in\;\mathbb{R}^{1\times N_{\text{TERMS}}\times G};
     \end{split}
   \]
   \item {\bf Broadcasting:}  
-    $F,M\in\mathbb{R}^{B\times N\_{TERMS}\times G}$.
+    $F,M\in\mathbb{R}^{B\times N\_{TERMS}\times G}$;
   \item {\bf Поэлементный минимум:}  
     $$
       C = \min(F,\,M)
-      \;\in\;\mathbb{R}^{B\times N\_{TERMS}\times G}.
+      \;\in\;\mathbb{R}^{B\times N\_{TERMS}\times G};
     $$
   \item {\bf Сведение по термам (максимум):}  
     $$
       \texttt{agg}_{k,j}
       = \max_{i=1,\dots,N\_{TERMS}} C_{k,i,j},
-      \quad \texttt{agg}\in\mathbb{R}^{B\times G}.
+      \quad \texttt{agg}\in\mathbb{R}^{B\times G};
     $$
   \item {\bf Интерпретация:}  
     каждая строка $\texttt{agg}[k]$ — функция принадлежности выходного значения для $k$-го образца.
@@ -569,20 +565,19 @@ def predict(vec, xb, noise, defuzz):
     $$
       y_k
       = \frac{\sum_{j=1}^G \texttt{agg}_{k,j}\,\texttt{YGRID}_j}
-             {\sum_{j=1}^G \texttt{agg}_{k,j}},
+             {\sum_{j=1}^G \texttt{agg}_{k,j}};
     $$
-    защищено через \texttt{torch.where} от деления на ноль.
   \item {\bf Max-membership:}  
     $$
       y_k
-      = \texttt{YGRID}_{\displaystyle\arg\max_j \texttt{agg}_{k,j}}.
+      = \texttt{YGRID}_{\displaystyle\arg\max_j \texttt{agg}_{k,j}};
     $$
   \item {\bf MOM (Mean of Maxima):}  
     $$
       m_k = \max_j \texttt{agg}_{k,j},\quad
       y_k
       = \frac{\sum_{j:\,\texttt{agg}_{k,j}=m_k} \texttt{YGRID}_j}
-             {\sum_{j:\,\texttt{agg}_{k,j}=m_k} 1}.
+             {\sum_{j:\,\texttt{agg}_{k,j}=m_k} 1};
     $$
   \item {\bf Bisector:}  
     найдём наименьшее $l_k$ такое, что
@@ -599,7 +594,7 @@ def predict(vec, xb, noise, defuzz):
 
 \paragraph{Этап 6: Окончательная обработка}
 \begin{itemize}
-  \item \texttt{torch.round} и \texttt{clamp}: приводим предсказание к целочисленным классам \([0, n\_classes-1]\).
+  \item \texttt{torch.round} и \texttt{clamp}: приводим предсказание к целочисленным классам \([0, n\_classes-1]\);
   \item Переносим на CPU и в numpy для совместимости с остальной частью пайплайна.
 \end{itemize}
 
@@ -611,8 +606,8 @@ def predict(vec, xb, noise, defuzz):
 \paragraph{Описание}  
 Мы создаём функцию \texttt{objective(trial)}, которая на каждом шаге:
 \begin{enumerate}
-  \item Генерирует вектор параметров \(\vec v\) через \texttt{build\_vec(trial)}, включая параметры входных и выходных функций принадлежности.
-  \item Подбирает значение шума \texttt{noise} в лог-шкале и метод дефаззификации \texttt{defm}.
+  \item Генерирует вектор параметров \(\vec v\) через \texttt{build\_vec(trial)}, включая параметры входных и выходных функций принадлежности;
+  \item Подбирает значение шума \texttt{noise} в лог-шкале и метод дефаззификации \texttt{defm};
   \item Делит данные на \(\texttt{CV\_FOLDS}\) стратифицированных фолдов и для каждого фолда:
     \begin{itemize}
       \item Вычисляет предсказание \(\hat y=\texttt{predict}(\vec v, X_{\text{val}}, \texttt{noise}, \texttt{defm})\).
@@ -621,8 +616,7 @@ def predict(vec, xb, noise, defuzz):
   \item Возвращает средний макро-F1, который Optuna стремится максимизировать.
 \end{enumerate}
 
-\paragraph{Код}  
-\begin{minted}[fontsize=\small]{python}
+\begin{minted}{python}
 def objective(trial):
     # 1) сборка параметров
     vec   = build_vec(trial)
@@ -655,13 +649,12 @@ study.optimize(objective, n_trials=5000,
 
 \paragraph{Описание}  
 \begin{itemize}
-  \item Отделяем 10\% данных в качестве hold-out.
-  \item По лучшему вектору \(\vec v^*\), шуму \(\texttt{noise}^*\) и методу дефаззификации \(\texttt{defm}^*\) делаем финальное предсказание.
+  \item Отделяем 10\% данных в качестве hold-out;
+  \item По лучшему вектору \(\vec v^*\), шуму \(\texttt{noise}^*\) и методу дефаззификации \(\texttt{defm}^*\) делаем финальное предсказание;
   \item Выводим подробный \texttt{classification\_report} и общую точность.
 \end{itemize}
 
-\paragraph{Код}  
-\begin{minted}[fontsize=\small]{python}
+\begin{minted}{python}
 # Формируем hold-out
 _, X_te, _, y_te = train_test_split(
     X, y, stratify=y, test_size=0.1,
@@ -721,28 +714,28 @@ print("Accuracy:", accuracy_score(y_te, y_hat))
 \begin{figure}[H]
   \centering
   \includegraphics[width=0.7\linewidth]{images/mf_out.png}
-  \caption{Выходные функции принадлежности (consequent MFs)}
+  \caption{Выходные функции принадлежности (consequent MFs). Авторский материал}
   \label{fig:mf_out}
 \end{figure}
 
 \begin{figure}[H]
   \centering
   \includegraphics[width=0.9\linewidth]{images/mf_in_setosa.png}
-  \caption{Antecedent MFs для класса \texttt{setosa}}
+  \caption{Antecedent MFs для класса \texttt{setosa}. Авторский материал}
   \label{fig:mf_in_setosa}
 \end{figure}
 
 \begin{figure}[H]
   \centering
   \includegraphics[width=0.9\linewidth]{images/mf_in_versicolor.png}
-  \caption{Antecedent MFs для класса \texttt{versicolor}}
+  \caption{Antecedent MFs для класса \texttt{versicolor}. Авторский материал}
   \label{fig:mf_in_versicolor}
 \end{figure}
 
 \begin{figure}[H]
   \centering
   \includegraphics[width=0.9\linewidth]{images/mf_in_virginica.png}
-  \caption{Antecedent MFs для класса \texttt{virginica}}
+  \caption{Antecedent MFs для класса \texttt{virginica}. Авторский материал}
   \label{fig:mf_in_virginica}
 \end{figure}
 
