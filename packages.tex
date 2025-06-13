@@ -4,10 +4,10 @@
 \usepackage[russian]{babel}
 
 \usepackage{eskdchngsheet}
-\usepackage{ulem} 
+% \usepackage{ulem} 
 \usepackage{acronym}
 % 1) Загружаем minted как float-пакет
-\usepackage[float]{minted}
+\usepackage{minted}
 
 \usepackage[square,numbers,sort&compress]{natbib}
 
@@ -81,30 +81,35 @@
 \counterwithin{equation}{section}
 
 %--- Оформление заголовков --------------------------------------
+\usepackage{tocloft}
+\tocloftpagestyle{empty}
+\renewcommand{\cfttoctitlefont}{\hspace*{\fill}\normalfont\Large\bfseries \vspace{1.5em}}
+\renewcommand{\cftaftertoctitle}{\hspace*{\fill}}
+\addtocontents{toc}{\cftpagenumbersoff{section}}
+
 \usepackage{titlesec}
 
-% \titleclass{\subsubsubsection}{straight}[\subsubsection]
-% \newcounter{subsubsubsection}[subsubsection]
-% \renewcommand\thesubsubsubsection%
-%   {\thesubsubsection.\arabic{subsubsubsection}}
-
+\titleformat{\section}[block]
+  {\normalfont\large\bfseries}{\thesection}{0.5em}{}             % номер + отступ
+\titleformat{\subsection}[block]
+  {\normalfont\large\bfseries}{\thesubsection}{0.5em}{}
+\titleformat{\subsubsection}[block]
+  {\normalfont\large\bfseries}{\thesubsubsection}{0.5em}{}
 \titleformat{\paragraph}[block]
-  {\normalfont\normalsize\bfseries} % ваш стиль
-  {\theparagraph}{1em}{}             % номер + отступ
+  {\normalfont\large\bfseries}{\theparagraph}{0.5em}{}             % номер + отступ
 \titleformat{\subparagraph}[block]
-  {\normalfont\normalsize\bfseries}
-  {\thesubparagraph}{1em}{}
+  {\normalfont\large\bfseries}{\thesubparagraph}{0.5em}{}
   
-\titlespacing*{\section}
-{0pt}{7ex}{3ex}
+\titlespacing{\section}
+{2em}{7ex}{3ex}
 \titlespacing*{\subsection}
-{0pt}{5ex}{1.5ex}
+{2em}{5ex}{1.5ex}
 \titlespacing*{\subsubsection}
-{0pt}{5ex}{1.5ex}
+{2em}{5ex}{1.5ex}
 \titlespacing*{\paragraph}
-{0pt}{1ex}{0.5ex}
+{2em}{4ex}{2ex}
 \titlespacing*{\subparagraph}
-{0pt}{1ex}{0.5ex}
+{2em}{4ex}{2ex}
 
 %--- Междустрочный интервал -------------------------------------
 \usepackage{setspace}
@@ -149,7 +154,7 @@
 % ------------------------------------------------
 % Универсальные отступы для всех списков, измеряемые в \parindent
 \setlist{%
-  leftmargin=0.8\parindent,                 % отступ всего списка = \parindent
+  leftmargin=5em,                 % отступ всего списка = \parindent
   labelsep=0.5em,                % расстояние между меткой и текстом = 0.5·\parindent itemsep=0.5em,                           % вертикальный пробел между пунктами
   parsep=0pt,                            % отступ между абзацами внутри пункта
   topsep=0.1\parindent,                  % отступ перед первым и после последнего пункта = 0.5·\parindent
@@ -163,9 +168,9 @@
   ref=\asbuk*),       % чтобы \ref тоже работал
 }
 
-\setlength{\floatsep}{1.5\baselineskip}    % между двумя плавающими объектами
-\setlength{\textfloatsep}{1.5\baselineskip}% между плавающим объектом и текстом
-\setlength{\intextsep}{1.5\baselineskip}   % для плавающих объектов внутри текста
+% \setlength{\floatsep}{1.5\baselineskip}    % между двумя плавающими объектами
+% \setlength{\textfloatsep}{1.5\baselineskip}% между плавающим объектом и текстом
+% \setlength{\intextsep}{1.5\baselineskip}   % для плавающих объектов внутри текста
 
 % 2. Одинарный (или иной) интервал внутри caption
 \usepackage{caption}
@@ -176,3 +181,4 @@
 
 
 \captionsetup[listing]{name=Листинг}
+
